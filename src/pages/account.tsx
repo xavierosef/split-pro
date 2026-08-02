@@ -17,6 +17,7 @@ import { AccountButton } from '~/components/Account/AccountButton';
 import { DownloadAppDrawer } from '~/components/Account/DownloadAppDrawer';
 import { LanguagePicker } from '~/components/Account/LanguagePicker';
 import { SubmitFeedback } from '~/components/Account/SubmitFeedback';
+import { TextSizePicker } from '~/components/Account/TextSizePicker';
 import { TotalBalanceCard } from '~/components/Account/TotalBalanceCard';
 import { SubscribeNotification } from '~/components/Account/SubscribeNotification';
 import { UpdateName } from '~/components/Account/UpdateDetails';
@@ -117,6 +118,8 @@ const AccountPage: NextPageWithUser<{
           )}
         </div>
         <div className="mt-8 flex flex-col gap-4">
+          <TextSizePicker />
+
           <LanguagePicker>
             <AccountButton>
               <Languages className="size-5 text-green-500" />

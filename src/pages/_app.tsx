@@ -6,6 +6,7 @@ import { appWithTranslation, useTranslation } from 'next-i18next';
 import { type AppType } from 'next/app';
 import { Poppins } from 'next/font/google';
 import Head from 'next/head';
+import { AnimatePresence, motion } from 'motion/react';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 import { Toaster } from 'sonner';
@@ -19,15 +20,42 @@ import { api } from '~/utils/api';
 
 import 'react-easy-crop/react-easy-crop.css';
 import '~/styles/globals.css';
+import { applyStoredTextSize } from '~/components/Account/TextSizePicker';
 
 const poppins = Poppins({ weight: ['200', '300', '400', '500', '600', '700'], subsets: ['latin'] });
 const toastOptions = { duration: 1500 };
+
+const PageTransition: React.FC<{ routeKey: string; children: React.ReactNode }> = ({
+  routeKey,
+  children,
+}) => (
+  <AnimatePresence mode="wait" initial={false}>
+    <motion.div
+      key={routeKey}
+      className="h-full"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -6 }}
+      transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+    >
+      {children}
+    </motion.div>
+  </AnimatePresence>
+);
+
+const TextSizeEffect: React.FC = () => {
+  useEffect(() => {
+    applyStoredTextSize();
+  }, []);
+  return null;
+};
 
 const MyApp: AppType<{ session: Session | null }> = ({
   Component,
   pageProps: { session, ...pageProps },
 }) => {
   const { t, ready } = useTranslation();
+  const router = useRouter();
 
   if (!ready) {
     return (
@@ -86,11 +114,14 @@ const MyApp: AppType<{ session: Session | null }> = ({
         <CurrencyHelpersProvider>
           <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <Toaster toastOptions={toastOptions} />
-            {(Component as NextPageWithUser).auth ? (
-              <Auth pageProps={pageProps} Page={Component as NextPageWithUser} />
-            ) : (
-              <Component {...pageProps} />
-            )}{' '}
+            <TextSizeEffect />
+            <PageTransition routeKey={router.asPath}>
+              {(Component as NextPageWithUser).auth ? (
+                <Auth pageProps={pageProps} Page={Component as NextPageWithUser} />
+              ) : (
+                <Component {...pageProps} />
+              )}
+            </PageTransition>
           </ThemeProvider>
         </CurrencyHelpersProvider>
       </SessionProvider>

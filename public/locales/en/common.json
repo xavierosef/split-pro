@@ -9,6 +9,20 @@
       "placeholder": "Select a language",
       "title": "Select a language"
     },
+    "debug_info": "Debug info",
+    "debug_info_details": {
+      "title": "Debug Information",
+      "description": "Paste the information below when creating a support request:",
+      "user_agent": "UserAgent",
+      "git": "Git",
+      "version": "Version",
+      "new_version_available": "A new version is available:",
+      "copy_failed": "Failed to copy debug info to clipboard",
+      "send_test_notification": "Send test notification",
+      "test_notification_sent": "Test notification sent",
+      "test_notification_failed": "Could not send test notification"
+    },
+    "default_balance_currency": "Default balance currency",
     "download_app": "Download app",
     "download_app_details": {
       "download_as_pwa": "You can download SplitPro as a PWA to your home screen.",
@@ -18,7 +32,6 @@
       "video": "video"
     },
     "download_splitpro_data": "Download SplitPro data",
-    "default_balance_currency": "Default balance currency",
     "edit_name": {
       "apply_avatar": "Apply avatar",
       "avatar_label": "Profile picture",
@@ -60,21 +73,14 @@
       "title": "Submit feedback"
     },
     "support_us": "Sponsor us",
+    "text_size": "Text size",
+    "text_sizes": {
+      "compact": "Compact",
+      "normal": "Normal",
+      "large": "Large"
+    },
     "title": "Account",
-    "write_review": "Write a review",
-    "debug_info": "Debug info",
-    "debug_info_details": {
-      "title": "Debug Information",
-      "description": "Paste the information below when creating a support request:",
-      "user_agent": "UserAgent",
-      "git": "Git",
-      "version": "Version",
-      "new_version_available": "A new version is available:",
-      "copy_failed": "Failed to copy debug info to clipboard",
-      "send_test_notification": "Send test notification",
-      "test_notification_sent": "Test notification sent",
-      "test_notification_failed": "Could not send test notification"
-    }
+    "write_review": "Write a review"
   },
   "actions": {
     "add_expense": "Add expense",
@@ -357,9 +363,10 @@
     "activity": "Activity",
     "add": "Add",
     "add_expense": "Add Expense",
-    "recurring": "Recurring",
     "balances": "Balances",
-    "groups": "Groups"
+    "expenses": "Expenses",
+    "groups": "Groups",
+    "recurring": "Recurring"
   },
   "recurrence": {
     "title": "Recurrence",
@@ -427,21 +434,23 @@
       }
     },
     "expense_details": "Expense details",
+    "in_group": "In group",
     "no_activity": "No activities yet",
     "not_involved": "Not involved",
     "not_set": "Not set",
     "on": "on",
     "or": "or",
     "outstanding_balances": "Outstanding balances",
-    "total_balance": "Total balance",
-    "select_currency": "Select currency",
+    "owes_you": "{{friend}} owes you",
     "select_balance": "Select balance",
+    "select_currency": "Select currency",
     "settle_up_name": "Settle up",
     "settled_up": "Settled up",
     "settlement": "Settlement",
     "share_text": "Check out SplitPro. It's an open source free alternative for Splitwise",
     "show_all_currencies": "Show all currencies",
     "today": "Today",
-    "in_group": "In group"
+    "total_balance": "Total balance",
+    "you_owe": "You owe {{friend}}"
   }
 }

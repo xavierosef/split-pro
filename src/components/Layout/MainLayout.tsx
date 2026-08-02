@@ -1,16 +1,16 @@
 import {
   ListBulletIcon as SolidListBulletIcon,
-  PlusCircleIcon as SolidPlusCircleIcon,
+  ReceiptPercentIcon as SolidReceiptIcon,
   UserCircleIcon as SolidUserCircleIcon,
-  UserGroupIcon as SolidUserGroupIcon,
 } from '@heroicons/react/24/solid';
 import { clsx } from 'clsx';
 import { type LucideIcon } from 'lucide-react';
+import { motion } from 'motion/react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useTranslation } from 'next-i18next';
 import React from 'react';
-import { SOLO_ADD_LINK, SOLO_GROUP_LINK } from '~/lib/soloGroup';
+import { SOLO_GROUP_LINK } from '~/lib/soloGroup';
 import { LoadingSpinner } from '../ui/spinner';
 
 interface MainLayoutProps {
@@ -21,6 +21,12 @@ interface MainLayoutProps {
   loading?: boolean;
   hideAppBar?: boolean;
 }
+
+const NAV_ITEMS = [
+  { key: 'expenses', link: SOLO_GROUP_LINK, match: '/groups', Icon: SolidReceiptIcon },
+  { key: 'activity', link: '/activity', match: '/activity', Icon: SolidListBulletIcon },
+  { key: 'account', link: '/account', match: '/account', Icon: SolidUserCircleIcon },
+] as const;
 
 const MainLayout: React.FC<MainLayoutProps> = ({
   children,
@@ -48,32 +54,16 @@ const MainLayout: React.FC<MainLayoutProps> = ({
               {t?.('meta.application_name') ?? 'SplitPro'}
             </span>
           </Link>
-          <NavItemDesktop
-            title={t?.('navigation.groups') ?? 'Groups'}
-            Icon={SolidUserGroupIcon}
-            link={SOLO_GROUP_LINK}
-            match="/groups"
-            currentPath={currentPath}
-          />
-          <NavItemDesktop
-            title={t?.('navigation.add_expense') ?? 'Add Expense'}
-            Icon={SolidPlusCircleIcon}
-            link={SOLO_ADD_LINK}
-            match="/add"
-            currentPath={currentPath}
-          />
-          <NavItemDesktop
-            title={t?.('navigation.activity') ?? 'Activity'}
-            Icon={SolidListBulletIcon}
-            link="/activity"
-            currentPath={currentPath}
-          />
-          <NavItemDesktop
-            title={t?.('navigation.account') ?? 'Account'}
-            Icon={SolidUserCircleIcon}
-            link="/account"
-            currentPath={currentPath}
-          />
+          {NAV_ITEMS.map(({ key, link, match, Icon }) => (
+            <NavItemDesktop
+              key={key}
+              title={t?.(`navigation.${key}`) ?? key}
+              Icon={Icon}
+              link={link}
+              match={match}
+              currentPath={currentPath}
+            />
+          ))}
         </nav>
         <div
           className="w-full overflow-auto lg:border-x lg:border-gray-900 lg:px-6"
@@ -81,7 +71,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         >
           {title ? (
             <div className="mb-2 flex items-center justify-between px-4 py-4">
-              <div className="text-3xl font-bold text-foreground">{title}</div>
+              <div className="text-foreground text-3xl font-bold">{title}</div>
               {actions}
             </div>
           ) : null}
@@ -98,33 +88,17 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         </div>
       </div>
 
-      <nav className="liquid-glass-nav fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] flex justify-between rounded-[1.75rem] px-1 lg:hidden">
-        <NavItem
-          title={t?.('navigation.groups') ?? 'Groups'}
-          Icon={SolidUserGroupIcon}
-          link={SOLO_GROUP_LINK}
-          match="/groups"
-          currentPath={currentPath}
-        />
-        <NavItem
-          title={t?.('navigation.add') ?? 'Add'}
-          Icon={SolidPlusCircleIcon}
-          link={SOLO_ADD_LINK}
-          match="/add"
-          currentPath={currentPath}
-        />
-        <NavItem
-          title={t?.('navigation.activity') ?? 'Activity'}
-          Icon={SolidListBulletIcon}
-          link="/activity"
-          currentPath={currentPath}
-        />
-        <NavItem
-          title={t?.('navigation.account') ?? 'Account'}
-          Icon={SolidUserCircleIcon}
-          link="/account"
-          currentPath={currentPath}
-        />
+      <nav className="liquid-glass liquid-glass--nav fixed inset-x-6 bottom-[calc(env(safe-area-inset-bottom)+0.65rem)] flex justify-around rounded-full p-1 lg:hidden">
+        {NAV_ITEMS.map(({ key, link, match, Icon }) => (
+          <NavItem
+            key={key}
+            title={t?.(`navigation.${key}`) ?? key}
+            Icon={Icon}
+            link={link}
+            match={match}
+            currentPath={currentPath}
+          />
+        ))}
       </nav>
     </div>
   );
@@ -138,18 +112,40 @@ interface NavItemProps {
   match?: string;
 }
 
+const SPRING = { type: 'spring', stiffness: 420, damping: 34, mass: 0.9 } as const;
+
 const NavItem: React.FC<NavItemProps> = ({ title, Icon, link, currentPath, match }) => {
   const isActive = currentPath?.startsWith(match ?? link);
 
   return (
     <Link
       href={link}
-      className={clsx('flex w-32 flex-col items-center justify-between gap-2 py-4')}
+      aria-current={isActive ? 'page' : undefined}
+      className="relative flex flex-1 items-center justify-center rounded-full py-2.5"
     >
-      <Icon className={clsx('h-7 w-7', isActive ? 'text-cyan-500' : 'text-gray-600')} />
-      <span className={clsx('text-xs', isActive ? 'font-medium text-cyan-500' : 'text-gray-500')}>
-        {title}
-      </span>
+      {isActive && (
+        <motion.span
+          layoutId="nav-pill"
+          transition={SPRING}
+          className="liquid-glass-pill absolute inset-0 rounded-full"
+        />
+      )}
+      <motion.span
+        className="relative z-10 flex items-center gap-1.5"
+        animate={{ scale: isActive ? 1 : 0.94 }}
+        whileTap={{ scale: 0.88 }}
+        transition={SPRING}
+      >
+        <Icon className={clsx('size-5', isActive ? 'text-primary' : 'text-muted-foreground')} />
+        <motion.span
+          className="text-primary overflow-hidden text-xs font-medium whitespace-nowrap"
+          initial={false}
+          animate={{ width: isActive ? 'auto' : 0, opacity: isActive ? 1 : 0 }}
+          transition={SPRING}
+        >
+          {title}
+        </motion.span>
+      </motion.span>
     </Link>
   );
 };
@@ -159,9 +155,12 @@ const NavItemDesktop: React.FC<NavItemProps> = ({ title, Icon, link, currentPath
 
   return (
     <Link href={link} className={clsx('flex w-[150px] items-center gap-2 py-4')}>
-      <Icon className={clsx('h-7 w-7', isActive ? 'text-cyan-500' : 'text-gray-600')} />
+      <Icon className={clsx('h-7 w-7', isActive ? 'text-primary' : 'text-muted-foreground')} />
       <span
-        className={clsx('capitalize', isActive ? 'font-medium text-cyan-500' : 'text-gray-500')}
+        className={clsx(
+          'capitalize',
+          isActive ? 'text-primary font-medium' : 'text-muted-foreground',
+        )}
       >
         {title}
       </span>

@@ -6,17 +6,15 @@ import {
   DoorOpen,
   Info,
   Merge,
-  PlusIcon,
   Trash2,
   X,
 } from 'lucide-react';
 import { type GetServerSideProps } from 'next';
 import Head from 'next/head';
-import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { Fragment, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
-import { BalanceList } from '~/components/Expense/BalanceList';
+import { AddExpenseFab } from '~/components/Expense/AddExpenseFab';
 import { ExpenseList } from '~/components/Expense/ExpenseList';
 import GroupMyBalance from '~/components/group/GroupMyBalance';
 import NoMembers from '~/components/group/NoMembers';
@@ -28,7 +26,6 @@ import { Label } from '~/components/ui/label';
 import { SimpleConfirmationDialog } from '~/components/SimpleConfirmationDialog';
 import { DefaultSplitSettings } from '~/components/DefaultSplit/DefaultSplitSettings';
 import { Switch } from '~/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { UpdateName } from '~/components/Account/UpdateDetails';
 import { CurrencyPicker } from '~/components/AddExpense/CurrencyPicker';
 import { env } from '~/env';
@@ -478,39 +475,15 @@ const BalancePage: NextPageWithUser<{
                 groupId={groupId}
               />
             </div>
-            <div className="mb-4 border-b pb-2" />
-            {!isArchived && (
-              <Link
-                href={`/add?groupId=${groupId}`}
-                aria-label={t('actions.add_expense')}
-                className="fixed right-5 bottom-28 z-50 lg:bottom-8"
-              >
-                <Button size="icon" className="size-14 rounded-full shadow-lg">
-                  <PlusIcon className="size-6" />
-                </Button>
-              </Link>
-            )}
-            <Tabs defaultValue="expenses">
-              <TabsList className="mx-auto grid w-full max-w-96 grid-cols-2">
-                <TabsTrigger value="expenses">{t('group_details.tabs.expenses')}</TabsTrigger>
-                <TabsTrigger value="balances">{t('group_details.tabs.balances')}</TabsTrigger>
-              </TabsList>
-              <TabsContent value="expenses">
-                <ExpenseList
-                  userId={user.id}
-                  expenses={expensesQuery.data}
-                  contactId={groupId}
-                  isLoading={expensesQuery.isPending}
-                  isGroup
-                />
-              </TabsContent>
-              <TabsContent value="balances">
-                <BalanceList
-                  groupBalances={groupDetailQuery.data?.groupBalances}
-                  users={groupDetailQuery.data?.groupUsers.map((gu) => gu.user)}
-                />
-              </TabsContent>
-            </Tabs>
+            <div className="mb-3 border-b pb-1" />
+            {!isArchived && <AddExpenseFab groupId={groupId} label={t('actions.add_expense')} />}
+            <ExpenseList
+              userId={user.id}
+              expenses={expensesQuery.data}
+              contactId={groupId}
+              isLoading={expensesQuery.isPending}
+              isGroup
+            />
           </div>
         )}
       </MainLayout>

@@ -290,47 +290,98 @@ input[type='number'] {
   }
 }
 
-/* Fork osefNAS : navbar translucide facon "liquid glass" iOS.
-   L'effet tient a trois couches : flou + saturation du fond, empilement de
-   box-shadow internes qui simulent les reflets speculaires sur les bords, et
-   une ombre portee douce. La refraction reelle (feDisplacementMap via
-   backdrop-filter) n'est pas supportee par WebKit : sur iPhone on garde
-   flou + reflets, qui portent l'essentiel du rendu. */
-.liquid-glass-nav {
-  --glass-light: 255 255 255;
-  --glass-dark: 0 0 0;
-  --glass-tint: 14%;
-  --glass-reflex: 0.85;
+/* Fork osefNAS — "liquid glass".
+   Trois couches font le verre : le fond floute et sature ce qui passe dessous,
+   une pile de box-shadow internes simule les reflets speculaires sur les
+   aretes, une ombre portee decolle l'element. WebKit ne sait pas appliquer un
+   filtre SVG dans un backdrop-filter, donc pas de refraction sur iPhone : ce
+   sont les reflets qui portent le rendu. */
+.liquid-glass {
+  --glass-tint: 8%;
+  --glass-reflex: 1;
+  --glass-blur: 20px;
 
+  position: relative;
+  isolation: isolate;
   background-color: color-mix(in srgb, var(--background) var(--glass-tint), transparent);
-  -webkit-backdrop-filter: blur(14px) saturate(180%);
-  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(190%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(190%);
   border: none;
   box-shadow:
-    inset 0 0 0 1px rgb(var(--glass-light) / calc(var(--glass-reflex) * 0.14)),
-    inset 2px 3px 0 -2px rgb(var(--glass-light) / calc(var(--glass-reflex) * 0.8)),
-    inset -2px -2px 0 -2px rgb(var(--glass-light) / calc(var(--glass-reflex) * 0.7)),
-    inset -3px -8px 1px -6px rgb(var(--glass-light) / calc(var(--glass-reflex) * 0.5)),
-    inset 0 3px 4px -2px rgb(var(--glass-dark) / 0.18),
-    inset 2px -6px 1px -4px rgb(var(--glass-dark) / 0.1),
-    0 1px 5px 0 rgb(var(--glass-dark) / 0.1),
-    0 6px 16px 0 rgb(var(--glass-dark) / 0.12);
+    inset 0 0 0 1px rgb(255 255 255 / calc(var(--glass-reflex) * 0.18)),
+    inset 2px 3px 0 -2px rgb(255 255 255 / calc(var(--glass-reflex) * 0.95)),
+    inset -2px -2px 0 -2px rgb(255 255 255 / calc(var(--glass-reflex) * 0.8)),
+    inset -3px -8px 1px -6px rgb(255 255 255 / calc(var(--glass-reflex) * 0.55)),
+    inset 0 3px 5px -2px rgb(0 0 0 / 0.14),
+    inset 2px -6px 1px -4px rgb(0 0 0 / 0.08),
+    0 1px 4px 0 rgb(0 0 0 / 0.08),
+    0 8px 24px -6px rgb(0 0 0 / 0.16);
 }
 
-.dark .liquid-glass-nav {
-  --glass-tint: 34%;
-  --glass-reflex: 0.45;
+/* Reflet mobile : une bande claire tres diffuse en haut, qui donne
+   l'impression que la lumiere glisse sur la surface. */
+.liquid-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(
+    150deg,
+    rgb(255 255 255 / calc(var(--glass-reflex) * 0.35)) 0%,
+    rgb(255 255 255 / 0) 42%,
+    rgb(255 255 255 / 0) 70%,
+    rgb(255 255 255 / calc(var(--glass-reflex) * 0.12)) 100%
+  );
+  pointer-events: none;
+}
+
+.dark .liquid-glass {
+  --glass-tint: 22%;
+  --glass-reflex: 0.42;
   box-shadow:
-    inset 0 0 0 1px rgb(var(--glass-light) / 0.1),
-    inset 2px 3px 0 -2px rgb(var(--glass-light) / calc(var(--glass-reflex) * 0.7)),
-    inset -2px -2px 0 -2px rgb(var(--glass-light) / calc(var(--glass-reflex) * 0.5)),
-    inset -3px -8px 1px -6px rgb(var(--glass-light) / calc(var(--glass-reflex) * 0.35)),
-    inset 0 3px 6px -2px rgb(var(--glass-dark) / 0.5),
-    0 6px 24px 0 rgb(var(--glass-dark) / 0.55);
+    inset 0 0 0 1px rgb(255 255 255 / 0.11),
+    inset 2px 3px 0 -2px rgb(255 255 255 / calc(var(--glass-reflex) * 0.75)),
+    inset -2px -2px 0 -2px rgb(255 255 255 / calc(var(--glass-reflex) * 0.5)),
+    inset -3px -8px 1px -6px rgb(255 255 255 / calc(var(--glass-reflex) * 0.32)),
+    inset 0 3px 6px -2px rgb(0 0 0 / 0.5),
+    0 10px 30px -8px rgb(0 0 0 / 0.6);
+}
+
+.liquid-glass--nav {
+  --glass-blur: 24px;
+}
+
+/* Pastille de l'onglet actif : verre dans le verre, donc pas de flou
+   supplementaire (il ne s'accumule pas), juste un voile et une arete. */
+.liquid-glass-pill {
+  background-color: color-mix(in srgb, var(--foreground) 8%, transparent);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.22),
+    inset 1px 2px 0 -1px rgb(255 255 255 / 0.6),
+    0 2px 8px -2px rgb(0 0 0 / 0.18);
+}
+
+.dark .liquid-glass-pill {
+  background-color: color-mix(in srgb, white 10%, transparent);
+  box-shadow:
+    inset 0 0 0 1px rgb(255 255 255 / 0.13),
+    inset 1px 2px 0 -1px rgb(255 255 255 / 0.3),
+    0 2px 10px -2px rgb(0 0 0 / 0.45);
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .liquid-glass-nav {
+  .liquid-glass {
     background-color: var(--background);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

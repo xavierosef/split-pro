@@ -1,5 +1,6 @@
 import { SplitType } from '@prisma/client';
 import { type inferRouterOutputs } from '@trpc/server';
+import { motion } from 'motion/react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
@@ -17,6 +18,8 @@ type ExpensesOutput =
   | inferRouterOutputs<ExpenseRouter>['getExpensesWithFriend'];
 
 type SingleExpenseOutput = ExpensesOutput[number];
+
+const MotionLink = motion.create(Link);
 
 type ExpenseComponent = React.FC<{
   e: SingleExpenseOutput;
@@ -39,8 +42,8 @@ export const ExpenseList: React.FC<{
   let lastDate: Date | null = null;
 
   return (
-    <div className="flex flex-col gap-3">
-      {expenses.map((e) => {
+    <div className="flex flex-col">
+      {expenses.map((e, index) => {
         const currentDate = e.expenseDate;
         let isFirstOfMonth = false;
 
@@ -60,24 +63,34 @@ export const ExpenseList: React.FC<{
         return (
           <React.Fragment key={e.id}>
             {isFirstOfMonth && (
-              <div className="flex flex-row items-center gap-4 pt-2">
-                <div className="text-xs font-medium text-gray-700 uppercase">
+              <div className="flex flex-row items-center gap-3 pt-4 pb-1">
+                <div className="text-muted-foreground text-[0.7rem] font-semibold tracking-wider uppercase">
                   {new Intl.DateTimeFormat(i18n.language, {
                     month: 'long',
                     year: 'numeric',
                   }).format(currentDate)}
                 </div>
-                <Separator className="flex-1 bg-gray-800" />
+                <Separator className="bg-border flex-1" />
               </div>
             )}
-            <Link
+            <MotionLink
               href={`/${isGroup ? 'groups' : 'balances'}/${contactId}/expenses/${e.id}`}
-              className={cn('flex items-center justify-between', isFirstOfMonth ? 'pb-2' : 'py-2')}
+              className={cn(
+                'hover:bg-muted/60 -mx-2 flex items-center justify-between rounded-xl px-2 py-1.5 transition-colors',
+              )}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.32,
+                delay: Math.min(index, 12) * 0.025,
+                ease: [0.22, 1, 0.36, 1],
+              }}
+              whileTap={{ scale: 0.98 }}
             >
               {isSettlement && <Settlement e={e} userId={userId} />}
               {isCurrencyConversion && <CurrencyConversion e={e} userId={userId} />}
               {!isSettlement && !isCurrencyConversion && <Expense e={e} userId={userId} />}
-            </Link>
+            </MotionLink>
           </React.Fragment>
         );
       })}
@@ -103,14 +116,14 @@ const Expense: ExpenseComponent = ({ e, userId }) => {
 
   return (
     <>
-      <div className="flex min-w-0 items-center gap-4">
-        <div className="inline-block w-6 shrink-0 text-center text-xs text-gray-500">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="text-muted-foreground inline-block w-6 shrink-0 text-center text-[0.7rem]">
           {toUIDate(e.expenseDate)}
         </div>
-        <CategoryIcon category={e.category} className="size-5 shrink-0 text-gray-400" />
+        <CategoryIcon category={e.category} className="text-muted-foreground size-4 shrink-0" />
         <div className="min-w-0 pe-1">
-          <p className="truncate text-sm lg:text-base">{e.name}</p>
-          <p className="truncate text-xs text-gray-500">
+          <p className="truncate text-sm leading-tight">{e.name}</p>
+          <p className="text-muted-foreground truncate text-[0.7rem] leading-tight">
             {displayName(e.paidByUser, userId)}{' '}
             {t(`ui.expense.user.${e.amount < 0n ? 'received' : 'paid'}`)} {toUIString(e.amount)}
           </p>
@@ -119,11 +132,13 @@ const Expense: ExpenseComponent = ({ e, userId }) => {
       <div className="min-w-10 shrink-0">
         {youPaid || 0n !== yourExpenseAmount ? (
           <>
-            <div className={`text-right text-xs ${youPaid ? 'text-positive' : 'text-negative'}`}>
+            <div
+              className={`text-right text-[0.65rem] leading-tight ${youPaid ? 'text-positive' : 'text-negative'}`}
+            >
               {t('actors.you')} {t(`ui.expense.you.${youPaid ? 'lent' : 'owe'}`)}
             </div>
             <div
-              className={`xs:max-w-full max-w-32 truncate text-right ${youPaid ? 'text-positive' : 'text-negative'}`}
+              className={`xs:max-w-full max-w-32 truncate text-right text-sm leading-tight font-medium ${youPaid ? 'text-positive' : 'text-negative'}`}
             >
               {toUIString(yourExpenseAmount)}
             </div>

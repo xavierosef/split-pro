@@ -73,6 +73,12 @@
       "title": "Faire un feedback"
     },
     "support_us": "Faire un don",
+    "text_size": "Taille du texte",
+    "text_sizes": {
+      "compact": "Compact",
+      "normal": "Normal",
+      "large": "Grand"
+    },
     "title": "Compte",
     "write_review": "Écrire un avis"
   },
@@ -358,6 +364,7 @@
     "add": "Ajouter",
     "add_expense": "Nouvelle dépense",
     "balances": "Soldes",
+    "expenses": "Dépenses",
     "groups": "Groupes",
     "recurring": "Récurrences"
   },
@@ -434,6 +441,7 @@
     "on": "le",
     "or": "ou",
     "outstanding_balances": "Soldes en cours",
+    "owes_you": "{{friend}} te doit",
     "select_balance": "Choix du solde",
     "select_currency": "Choix de la devise",
     "settle_up_name": "Régler une dette",
@@ -442,6 +450,7 @@
     "share_text": "Jette un œil à SplitPro : c'est une alternative open source et gratuite à Splitwise",
     "show_all_currencies": "Montrer toutes les devises",
     "today": "Aujourd'hui",
-    "total_balance": "Solde global"
+    "total_balance": "Solde global",
+    "you_owe": "Tu dois à {{friend}}"
   }
 }
