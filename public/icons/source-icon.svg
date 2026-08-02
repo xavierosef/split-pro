@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0.05" y1="0" x2="0.95" y2="1">
+      <stop offset="0" stop-color="#35d0e8"/>
+      <stop offset="0.5" stop-color="#3a6ce8"/>
+      <stop offset="1" stop-color="#8d3fe4"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0.55" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.34"/>
+      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.03"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="liquid" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.98"/>
+      <stop offset="1" stop-color="#ffffff" stop-opacity="0.82"/>
+    </linearGradient>
+    <clipPath id="disc">
+      <circle cx="256" cy="262" r="138"/>
+    </clipPath>
+  </defs>
+
+  <rect width="512" height="512" rx="114" fill="url(#bg)"/>
+  <rect width="512" height="512" rx="114" fill="url(#sheen)"/>
+
+  <g clip-path="url(#disc)">
+    <path
+      d="M118,286 C150,252 182,320 214,290 C246,260 278,326 310,296 C340,268 372,300 394,282 L394,400 L118,400 Z"
+      fill="url(#liquid)"/>
+    <path
+      d="M118,316 C152,290 184,344 216,318 C248,292 280,346 312,320 C342,296 374,324 394,312 L394,400 L118,400 Z"
+      fill="#ffffff" fill-opacity="0.45"/>
+  </g>
+
+  <circle cx="256" cy="262" r="138" fill="none" stroke="#ffffff" stroke-opacity="0.92" stroke-width="16"/>
+  <path d="M158 200 A138 138 0 0 1 244 126" fill="none" stroke="#ffffff" stroke-opacity="0.75"
+        stroke-width="14" stroke-linecap="round"/>
+</svg>

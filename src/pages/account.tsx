@@ -1,4 +1,4 @@
-import { CreditCard, Download, FileDown, Languages, Scale } from 'lucide-react';
+import { CreditCard, Download, FileDown, Languages } from 'lucide-react';
 import type { GetServerSideProps } from 'next';
 import { signOut } from 'next-auth/react';
 import { useTranslation } from 'next-i18next';
@@ -10,6 +10,7 @@ import { AccountButton } from '~/components/Account/AccountButton';
 import { DownloadAppDrawer } from '~/components/Account/DownloadAppDrawer';
 import { LanguagePicker } from '~/components/Account/LanguagePicker';
 import { SubmitFeedback } from '~/components/Account/SubmitFeedback';
+import { GroupBalancesDrawer } from '~/components/Account/GroupBalancesDrawer';
 import { TextSizePicker } from '~/components/Account/TextSizePicker';
 import { TotalBalanceCard } from '~/components/Account/TotalBalanceCard';
 import { SubscribeNotification } from '~/components/Account/SubscribeNotification';
@@ -110,10 +111,7 @@ const AccountPage: NextPageWithUser<{
           )}
         </div>
         <div className="mt-8 flex flex-col gap-4">
-          <AccountButton href="/balances">
-            <Scale className="size-5 text-cyan-500" />
-            {t('navigation.balances')}
-          </AccountButton>
+          <GroupBalancesDrawer />
 
           <TextSizePicker />
 

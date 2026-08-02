@@ -12,24 +12,25 @@ const fillRatio = (amount: number) => 0.1 + 0.72 * (1 - Math.exp(-Math.abs(amoun
 // Trois profils de vague differents : superposes a des vitesses et des
 // amplitudes distinctes, ils ne se resynchronisent jamais, ce qui donne
 // l'impression d'un liquide reellement agite plutot que d'une boucle.
+// Chaque calque couvre TOUTE la hauteur du liquide et remplit jusqu'en bas :
+// c'est ce qui evite les bandes horizontales visibles la ou un calque
+// s'arretait. Seule la crete varie. Amplitude large et cretes irregulieres
+// pour que ca ne ressemble pas a une sinusoide.
 const WAVES = [
   {
-    d: 'M0,26 C12,6 26,4 38,20 C50,36 62,38 74,22 C86,6 100,2 112,18 C124,34 138,36 150,20 C162,4 176,6 188,22 C194,30 198,28 200,24 L200,90 L0,90 Z',
-    duration: 4.5,
-    opacity: 0.65,
-    height: 'h-10',
+    d: 'M0,30 C10,8 20,4 32,18 C44,32 54,44 66,30 C78,16 88,2 100,14 C112,26 122,42 134,32 C146,22 156,4 168,16 C180,28 190,34 200,24 L200,200 L0,200 Z',
+    duration: 4,
+    opacity: 0.55,
   },
   {
-    d: 'M0,18 C16,34 30,32 44,16 C58,0 72,2 86,20 C100,38 116,36 130,18 C144,0 158,4 172,20 C184,32 194,28 200,20 L200,90 L0,90 Z',
-    duration: 7,
-    opacity: 0.45,
-    height: 'h-13',
+    d: 'M0,20 C12,42 24,38 36,20 C48,2 58,6 70,26 C82,46 94,40 106,22 C118,4 130,8 142,28 C154,48 166,42 178,24 C188,10 195,16 200,22 L200,200 L0,200 Z',
+    duration: 6.5,
+    opacity: 0.4,
   },
   {
-    d: 'M0,30 C14,14 28,38 44,28 C62,16 76,34 92,26 C110,16 124,38 142,28 C158,18 174,32 190,24 C195,22 198,26 200,28 L200,90 L0,90 Z',
-    duration: 11,
+    d: 'M0,38 C14,20 26,50 40,36 C56,20 68,52 84,38 C100,24 112,54 128,40 C144,26 158,50 172,38 C184,28 194,42 200,36 L200,200 L0,200 Z',
+    duration: 10,
     opacity: 0.3,
-    height: 'h-16',
   },
 ];
 
@@ -83,28 +84,27 @@ export const TotalBalanceCard: React.FC = () => {
   return (
     <div className="liquid-glass relative mb-6 h-40 overflow-hidden rounded-3xl">
       <motion.div
-        className="absolute inset-x-0 bottom-0"
+        className="absolute -inset-x-4 -bottom-3"
         style={{ height }}
-        animate={{ y: [0, -5, 2, -3, 0], rotate: [0, 0.5, -0.4, 0.3, 0] }}
+        animate={{ y: [0, -5, 2, -3, 0] }}
         transition={{ duration: 6.5, repeat: Infinity, ease: 'easeInOut' }}
       >
-        <div className="absolute inset-0 top-4" style={{ background: tint, opacity: 0.5 }} />
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `linear-gradient(to bottom, ${tint} 0%, ${tint} 100%)`,
+            opacity: 0.5,
+          }}
+        />
         {WAVES.map((wave, i) => (
           <motion.svg
             key={i}
-            className={`absolute inset-x-0 top-0 w-[200%] ${wave.height}`}
-            viewBox="0 0 200 90"
+            className="absolute inset-0 h-full w-[200%]"
+            viewBox="0 0 200 200"
             preserveAspectRatio="none"
             style={{ fill: tint, opacity: wave.opacity }}
-            animate={{ x: ['0%', '-50%'], scaleY: [1, 1.35, 0.85, 1.2, 1] }}
-            transition={{
-              x: { duration: wave.duration, repeat: Infinity, ease: 'linear' },
-              scaleY: {
-                duration: wave.duration * 0.8,
-                repeat: Infinity,
-                ease: 'easeInOut',
-              },
-            }}
+            animate={{ x: ['0%', '-50%'] }}
+            transition={{ duration: wave.duration, repeat: Infinity, ease: 'linear' }}
           >
             <path d={wave.d} />
           </motion.svg>

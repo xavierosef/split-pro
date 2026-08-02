@@ -19,6 +19,7 @@ import { ExpenseList } from '~/components/Expense/ExpenseList';
 import GroupMyBalance from '~/components/group/GroupMyBalance';
 import NoMembers from '~/components/group/NoMembers';
 import MainLayout from '~/components/Layout/MainLayout';
+import { PullToRefresh } from '~/components/Layout/PullToRefresh';
 import { EntityAvatar } from '~/components/ui/avatar';
 import { Button } from '~/components/ui/button';
 import { AppDrawer } from '~/components/ui/drawer';
@@ -476,13 +477,19 @@ const BalancePage: NextPageWithUser<{
               />
             </div>
             {!isArchived && <AddExpenseFab groupId={groupId} label={t('actions.add_expense')} />}
-            <ExpenseList
-              userId={user.id}
-              expenses={expensesQuery.data}
-              contactId={groupId}
-              isLoading={expensesQuery.isPending}
-              isGroup
-            />
+            <PullToRefresh
+              onRefresh={async () => {
+                await Promise.all([expensesQuery.refetch(), groupDetailQuery.refetch()]);
+              }}
+            >
+              <ExpenseList
+                userId={user.id}
+                expenses={expensesQuery.data}
+                contactId={groupId}
+                isLoading={expensesQuery.isPending}
+                isGroup
+              />
+            </PullToRefresh>
           </div>
         )}
       </MainLayout>
