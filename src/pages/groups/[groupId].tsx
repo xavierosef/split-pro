@@ -121,14 +121,7 @@ const BalancePage: NextPageWithUser<{
         </title>
       </Head>
       <MainLayout
-        title={
-          <div className="flex items-center">
-            <Button variant="ghost" onClick={() => router.replace(`/groups`)} className="mr-2 p-0">
-              <ChevronLeft className="h-6 w-6" />
-            </Button>
-            <p className="text-lg">{groupDetailQuery.data?.name}</p>
-          </div>
-        }
+        title={<p className="text-lg">{groupDetailQuery.data?.name}</p>}
         actions={
           <div className="flex gap-2">
             <AppDrawer

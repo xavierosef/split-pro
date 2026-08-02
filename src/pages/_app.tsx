@@ -84,7 +84,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
       </Head>
       <SessionProvider session={session}>
         <CurrencyHelpersProvider>
-          <ThemeProvider attribute="class" defaultTheme="dark">
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
             <Toaster toastOptions={toastOptions} />
             {(Component as NextPageWithUser).auth ? (
               <Auth pageProps={pageProps} Page={Component as NextPageWithUser} />

@@ -17,6 +17,7 @@ import { AccountButton } from '~/components/Account/AccountButton';
 import { DownloadAppDrawer } from '~/components/Account/DownloadAppDrawer';
 import { LanguagePicker } from '~/components/Account/LanguagePicker';
 import { SubmitFeedback } from '~/components/Account/SubmitFeedback';
+import { TotalBalanceCard } from '~/components/Account/TotalBalanceCard';
 import { SubscribeNotification } from '~/components/Account/SubscribeNotification';
 import { UpdateName } from '~/components/Account/UpdateDetails';
 import MainLayout from '~/components/Layout/MainLayout';
@@ -96,6 +97,7 @@ const AccountPage: NextPageWithUser<{
         <title>{t('account.title')}</title>
       </Head>
       <MainLayout title={t('account.title')} header={header}>
+        <TotalBalanceCard />
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <EntityAvatar entity={userQuery.data} size={50} />

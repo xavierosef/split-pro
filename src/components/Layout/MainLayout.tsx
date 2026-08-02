@@ -1,7 +1,6 @@
 import {
   ListBulletIcon as SolidListBulletIcon,
   PlusCircleIcon as SolidPlusCircleIcon,
-  ChartPieIcon as SolidScaleIcon,
   UserCircleIcon as SolidUserCircleIcon,
   UserGroupIcon as SolidUserGroupIcon,
 } from '@heroicons/react/24/solid';
@@ -49,12 +48,6 @@ const MainLayout: React.FC<MainLayoutProps> = ({
               {t?.('meta.application_name') ?? 'SplitPro'}
             </span>
           </Link>
-          <NavItemDesktop
-            title={t?.('navigation.balances') ?? 'Balances'}
-            Icon={SolidScaleIcon}
-            link="/balances"
-            currentPath={currentPath}
-          />
           <NavItemDesktop
             title={t?.('navigation.groups') ?? 'Groups'}
             Icon={SolidUserGroupIcon}
@@ -105,13 +98,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         </div>
       </div>
 
-      <nav className="bg-opacity-80 fixed bottom-0 flex w-full justify-between border-t px-2 pb-4 shadow-xs backdrop-blur-lg lg:hidden">
-        <NavItem
-          title={t?.('navigation.balances') ?? 'Balances'}
-          Icon={SolidScaleIcon}
-          link="/balances"
-          currentPath={currentPath}
-        />
+      <nav className="liquid-glass-nav fixed inset-x-3 bottom-[calc(env(safe-area-inset-bottom)+0.75rem)] flex justify-between rounded-[1.75rem] px-1 lg:hidden">
         <NavItem
           title={t?.('navigation.groups') ?? 'Groups'}
           Icon={SolidUserGroupIcon}
