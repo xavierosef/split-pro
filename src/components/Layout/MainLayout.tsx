@@ -81,7 +81,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         >
           {title ? (
             <div className="mb-2 flex items-center justify-between px-4 py-4">
-              <div className="text-3xl font-bold text-gray-200">{title}</div>
+              <div className="text-3xl font-bold text-foreground">{title}</div>
               {actions}
             </div>
           ) : null}

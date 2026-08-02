@@ -291,29 +291,46 @@ input[type='number'] {
 }
 
 /* Fork osefNAS : navbar translucide facon "liquid glass" iOS.
-   Approximation CSS : flou + saturation + bordure speculaire + ombre portee.
-   Pas de refraction reelle (Safari n'expose pas l'effet natif au web). */
+   L'effet tient a trois couches : flou + saturation du fond, empilement de
+   box-shadow internes qui simulent les reflets speculaires sur les bords, et
+   une ombre portee douce. La refraction reelle (feDisplacementMap via
+   backdrop-filter) n'est pas supportee par WebKit : sur iPhone on garde
+   flou + reflets, qui portent l'essentiel du rendu. */
 .liquid-glass-nav {
-  background: color-mix(in srgb, var(--background) 55%, transparent);
-  -webkit-backdrop-filter: blur(28px) saturate(200%);
-  backdrop-filter: blur(28px) saturate(200%);
-  border: 1px solid color-mix(in srgb, var(--foreground) 12%, transparent);
+  --glass-light: 255 255 255;
+  --glass-dark: 0 0 0;
+  --glass-tint: 14%;
+  --glass-reflex: 0.85;
+
+  background-color: color-mix(in srgb, var(--background) var(--glass-tint), transparent);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  backdrop-filter: blur(14px) saturate(180%);
+  border: none;
   box-shadow:
-    inset 0 1px 0 0 color-mix(in srgb, white 45%, transparent),
-    inset 0 -1px 0 0 color-mix(in srgb, black 8%, transparent),
-    0 8px 32px -8px color-mix(in srgb, black 45%, transparent);
+    inset 0 0 0 1px rgb(var(--glass-light) / calc(var(--glass-reflex) * 0.14)),
+    inset 2px 3px 0 -2px rgb(var(--glass-light) / calc(var(--glass-reflex) * 0.8)),
+    inset -2px -2px 0 -2px rgb(var(--glass-light) / calc(var(--glass-reflex) * 0.7)),
+    inset -3px -8px 1px -6px rgb(var(--glass-light) / calc(var(--glass-reflex) * 0.5)),
+    inset 0 3px 4px -2px rgb(var(--glass-dark) / 0.18),
+    inset 2px -6px 1px -4px rgb(var(--glass-dark) / 0.1),
+    0 1px 5px 0 rgb(var(--glass-dark) / 0.1),
+    0 6px 16px 0 rgb(var(--glass-dark) / 0.12);
 }
 
 .dark .liquid-glass-nav {
-  background: color-mix(in srgb, var(--background) 45%, transparent);
-  border-color: color-mix(in srgb, white 14%, transparent);
+  --glass-tint: 34%;
+  --glass-reflex: 0.45;
   box-shadow:
-    inset 0 1px 0 0 color-mix(in srgb, white 18%, transparent),
-    0 8px 32px -8px rgb(0 0 0 / 0.65);
+    inset 0 0 0 1px rgb(var(--glass-light) / 0.1),
+    inset 2px 3px 0 -2px rgb(var(--glass-light) / calc(var(--glass-reflex) * 0.7)),
+    inset -2px -2px 0 -2px rgb(var(--glass-light) / calc(var(--glass-reflex) * 0.5)),
+    inset -3px -8px 1px -6px rgb(var(--glass-light) / calc(var(--glass-reflex) * 0.35)),
+    inset 0 3px 6px -2px rgb(var(--glass-dark) / 0.5),
+    0 6px 24px 0 rgb(var(--glass-dark) / 0.55);
 }
 
-@supports not (backdrop-filter: blur(1px)) {
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
   .liquid-glass-nav {
-    background: var(--background);
+    background-color: var(--background);
   }
 }

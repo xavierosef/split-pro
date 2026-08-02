@@ -407,7 +407,7 @@ export const AddOrEditExpensePage: React.FC<{
                   className="hover:text-foreground/80 items-center justify-between px-2"
                 >
                   <Landmark
-                    className={cn(transactionId ? 'text-primary' : 'text-white-500', 'h-6 w-6')}
+                    className={cn(transactionId ? 'text-primary' : 'text-muted-foreground', 'h-6 w-6')}
                   />
                 </Button>
               </AddBankTransactions>

@@ -102,15 +102,15 @@ const ActivityPage: NextPageWithUser = ({ user }) => {
                       <span className="font-semibold">{e.expense.name}</span>
                     </p>
                   ) : (
-                    <p className="text-gray-300">
-                      <span className="font-semibold text-gray-300">
+                    <p className="text-foreground">
+                      <span className="font-semibold text-foreground">
                         {displayName(e.expense.paidByUser, user.id)}
                       </span>{' '}
                       {t(
                         `ui.expense.${e.expense.paidByUser.id === user.id ? 'you' : 'user'}.${e.expense.amount > 0n ? 'paid' : 'received'}`,
                       )}{' '}
                       {toUIString(e.expense.amount)} {t('ui.expense.for')}{' '}
-                      <span className="font-semibold text-gray-300">{e.expense.name}</span>
+                      <span className="font-semibold text-foreground">{e.expense.name}</span>
                     </p>
                   )}
 
