@@ -88,7 +88,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         </div>
       </div>
 
-      <nav className="liquid-glass liquid-glass--nav fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+0.6rem)] mx-auto flex max-w-md justify-between gap-1 rounded-[1.6rem] p-1.5 lg:hidden">
+      <nav className="liquid-glass liquid-glass--nav fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+1.75rem)] mx-auto flex max-w-md justify-between gap-1 rounded-full p-1.5 lg:hidden">
         {NAV_ITEMS.map(({ key, link, match, Icon }) => (
           <NavItem
             key={key}
@@ -121,13 +121,13 @@ const NavItem: React.FC<NavItemProps> = ({ title, Icon, link, currentPath, match
     <Link
       href={link}
       aria-current={isActive ? 'page' : undefined}
-      className="relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-[1.15rem] px-1 py-2"
+      className="relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-full px-1 py-2"
     >
       {isActive && (
         <motion.span
           layoutId="nav-pill"
           transition={SPRING}
-          className="liquid-glass-pill absolute inset-0 rounded-[1.15rem]"
+          className="liquid-glass-pill absolute inset-0 rounded-full"
         />
       )}
       <motion.span

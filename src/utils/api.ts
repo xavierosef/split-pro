@@ -25,6 +25,13 @@ export const getBaseUrl = () => {
 export const api = createTRPCNext<AppRouter>({
   config() {
     return {
+      // Les donnees deja chargees restent affichees en revenant sur un ecran,
+      // au lieu de repasser par un etat de chargement vide.
+      queryClientConfig: {
+        defaultOptions: {
+          queries: { staleTime: 30_000, refetchOnWindowFocus: false },
+        },
+      },
       /**
        * Links used to determine request flow from client to server.
        *

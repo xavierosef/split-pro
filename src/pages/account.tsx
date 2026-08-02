@@ -1,11 +1,4 @@
-import {
-  BadgeInfo,
-  CreditCard,
-  Download,
-  DownloadCloud,
-  FileDown,
-  Languages,
-} from 'lucide-react';
+import { CreditCard, Download, FileDown, Languages, Scale } from 'lucide-react';
 import type { GetServerSideProps } from 'next';
 import { signOut } from 'next-auth/react';
 import { useTranslation } from 'next-i18next';
@@ -17,7 +10,6 @@ import { AccountButton } from '~/components/Account/AccountButton';
 import { DownloadAppDrawer } from '~/components/Account/DownloadAppDrawer';
 import { LanguagePicker } from '~/components/Account/LanguagePicker';
 import { SubmitFeedback } from '~/components/Account/SubmitFeedback';
-import { BalancesDrawer } from '~/components/Account/BalancesDrawer';
 import { TextSizePicker } from '~/components/Account/TextSizePicker';
 import { TotalBalanceCard } from '~/components/Account/TotalBalanceCard';
 import { SubscribeNotification } from '~/components/Account/SubscribeNotification';
@@ -35,7 +27,6 @@ import {
 } from '~/server/bankTransactionHelper';
 import { api } from '~/utils/api';
 import type { NextPageWithUser } from '~/types';
-import { DebugInfo } from '~/components/Account/DebugInfo';
 import { useAppStore } from '~/store/appStore';
 
 const AccountPage: NextPageWithUser<{
@@ -119,7 +110,10 @@ const AccountPage: NextPageWithUser<{
           )}
         </div>
         <div className="mt-8 flex flex-col gap-4">
-          <BalancesDrawer />
+          <AccountButton href="/balances">
+            <Scale className="size-5 text-cyan-500" />
+            {t('navigation.balances')}
+          </AccountButton>
 
           <TextSizePicker />
 
@@ -157,17 +151,6 @@ const AccountPage: NextPageWithUser<{
             {t('account.download_splitpro_data')}
           </AccountButton>
 
-          <AccountButton href="/import-splitwise">
-            <DownloadCloud className="size-5 text-violet-500" />
-            {t('account.import_from_splitwise')}
-          </AccountButton>
-
-          <DebugInfo>
-            <AccountButton>
-              <BadgeInfo className="size-5 text-red-700" />
-              {t('account.debug_info')}
-            </AccountButton>
-          </DebugInfo>
         </div>
 
         <div className="mt-2 flex justify-center">

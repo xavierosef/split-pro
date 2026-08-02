@@ -8,7 +8,7 @@ export const AddExpenseFab: React.FC<{ groupId: number; label: string }> = ({ gr
   <MotionLink
     href={`/add?groupId=${groupId}`}
     aria-label={label}
-    className="liquid-glass liquid-glass--accent fixed right-5 bottom-[calc(env(safe-area-inset-bottom)+6.5rem)] z-50 flex size-15 items-center justify-center rounded-full lg:bottom-8"
+    className="liquid-glass liquid-glass--accent fixed right-5 bottom-[calc(env(safe-area-inset-bottom)+7.75rem)] z-50 flex size-15 items-center justify-center rounded-full lg:bottom-8"
     initial={{ scale: 0, rotate: -90 }}
     animate={{ scale: 1, rotate: 0 }}
     whileTap={{ scale: 0.88 }}

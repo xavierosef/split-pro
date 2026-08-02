@@ -13,9 +13,24 @@ const fillRatio = (amount: number) => 0.1 + 0.72 * (1 - Math.exp(-Math.abs(amoun
 // amplitudes distinctes, ils ne se resynchronisent jamais, ce qui donne
 // l'impression d'un liquide reellement agite plutot que d'une boucle.
 const WAVES = [
-  { d: 'M0,12 C25,2 45,22 70,12 C95,2 115,22 140,12 C165,2 185,22 200,12 L200,80 L0,80 Z', duration: 5, opacity: 0.6, height: 'h-7' },
-  { d: 'M0,14 C30,26 50,4 80,14 C110,24 130,4 160,14 C180,20 195,10 200,14 L200,80 L0,80 Z', duration: 8, opacity: 0.4, height: 'h-9' },
-  { d: 'M0,16 C20,8 40,24 60,16 C90,6 120,26 150,16 C175,8 190,20 200,16 L200,80 L0,80 Z', duration: 12, opacity: 0.28, height: 'h-11' },
+  {
+    d: 'M0,26 C12,6 26,4 38,20 C50,36 62,38 74,22 C86,6 100,2 112,18 C124,34 138,36 150,20 C162,4 176,6 188,22 C194,30 198,28 200,24 L200,90 L0,90 Z',
+    duration: 4.5,
+    opacity: 0.65,
+    height: 'h-10',
+  },
+  {
+    d: 'M0,18 C16,34 30,32 44,16 C58,0 72,2 86,20 C100,38 116,36 130,18 C144,0 158,4 172,20 C184,32 194,28 200,20 L200,90 L0,90 Z',
+    duration: 7,
+    opacity: 0.45,
+    height: 'h-13',
+  },
+  {
+    d: 'M0,30 C14,14 28,38 44,28 C62,16 76,34 92,26 C110,16 124,38 142,28 C158,18 174,32 190,24 C195,22 198,26 200,28 L200,90 L0,90 Z',
+    duration: 11,
+    opacity: 0.3,
+    height: 'h-16',
+  },
 ];
 
 export const TotalBalanceCard: React.FC = () => {
@@ -70,19 +85,26 @@ export const TotalBalanceCard: React.FC = () => {
       <motion.div
         className="absolute inset-x-0 bottom-0"
         style={{ height }}
-        animate={{ y: [0, -3, 1, -2, 0] }}
-        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+        animate={{ y: [0, -5, 2, -3, 0], rotate: [0, 0.5, -0.4, 0.3, 0] }}
+        transition={{ duration: 6.5, repeat: Infinity, ease: 'easeInOut' }}
       >
         <div className="absolute inset-0 top-4" style={{ background: tint, opacity: 0.5 }} />
         {WAVES.map((wave, i) => (
           <motion.svg
             key={i}
             className={`absolute inset-x-0 top-0 w-[200%] ${wave.height}`}
-            viewBox="0 0 200 80"
+            viewBox="0 0 200 90"
             preserveAspectRatio="none"
             style={{ fill: tint, opacity: wave.opacity }}
-            animate={{ x: ['0%', '-50%'] }}
-            transition={{ duration: wave.duration, repeat: Infinity, ease: 'linear' }}
+            animate={{ x: ['0%', '-50%'], scaleY: [1, 1.35, 0.85, 1.2, 1] }}
+            transition={{
+              x: { duration: wave.duration, repeat: Infinity, ease: 'linear' },
+              scaleY: {
+                duration: wave.duration * 0.8,
+                repeat: Infinity,
+                ease: 'easeInOut',
+              },
+            }}
           >
             <path d={wave.d} />
           </motion.svg>
