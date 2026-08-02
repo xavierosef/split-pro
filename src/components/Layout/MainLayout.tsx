@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useTranslation } from 'next-i18next';
 import React from 'react';
+import { SOLO_ADD_LINK, SOLO_GROUP_LINK } from '~/lib/soloGroup';
 import { LoadingSpinner } from '../ui/spinner';
 
 interface MainLayoutProps {
@@ -43,7 +44,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         )}
       >
         <nav className="item-center -ml-[170px] hidden w-[170px] px-4 py-4 lg:flex lg:flex-col lg:gap-2">
-          <Link href="/balances" className="mb-8 flex items-center gap-2">
+          <Link href={SOLO_GROUP_LINK} className="mb-8 flex items-center gap-2">
             <span className="text-xl font-medium">
               {t?.('meta.application_name') ?? 'SplitPro'}
             </span>
@@ -57,13 +58,15 @@ const MainLayout: React.FC<MainLayoutProps> = ({
           <NavItemDesktop
             title={t?.('navigation.groups') ?? 'Groups'}
             Icon={SolidUserGroupIcon}
-            link="/groups"
+            link={SOLO_GROUP_LINK}
+            match="/groups"
             currentPath={currentPath}
           />
           <NavItemDesktop
             title={t?.('navigation.add_expense') ?? 'Add Expense'}
             Icon={SolidPlusCircleIcon}
-            link="/add"
+            link={SOLO_ADD_LINK}
+            match="/add"
             currentPath={currentPath}
           />
           <NavItemDesktop
@@ -112,13 +115,15 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         <NavItem
           title={t?.('navigation.groups') ?? 'Groups'}
           Icon={SolidUserGroupIcon}
-          link="/groups"
+          link={SOLO_GROUP_LINK}
+          match="/groups"
           currentPath={currentPath}
         />
         <NavItem
           title={t?.('navigation.add') ?? 'Add'}
           Icon={SolidPlusCircleIcon}
-          link="/add"
+          link={SOLO_ADD_LINK}
+          match="/add"
           currentPath={currentPath}
         />
         <NavItem
@@ -143,10 +148,11 @@ interface NavItemProps {
   Icon: LucideIcon;
   link: string;
   currentPath?: string;
+  match?: string;
 }
 
-const NavItem: React.FC<NavItemProps> = ({ title, Icon, link, currentPath }) => {
-  const isActive = currentPath?.startsWith(link);
+const NavItem: React.FC<NavItemProps> = ({ title, Icon, link, currentPath, match }) => {
+  const isActive = currentPath?.startsWith(match ?? link);
 
   return (
     <Link
@@ -161,8 +167,8 @@ const NavItem: React.FC<NavItemProps> = ({ title, Icon, link, currentPath }) => 
   );
 };
 
-const NavItemDesktop: React.FC<NavItemProps> = ({ title, Icon, link, currentPath }) => {
-  const isActive = currentPath?.startsWith(link);
+const NavItemDesktop: React.FC<NavItemProps> = ({ title, Icon, link, currentPath, match }) => {
+  const isActive = currentPath?.startsWith(match ?? link);
 
   return (
     <Link href={link} className={clsx('flex w-[150px] items-center gap-2 py-4')}>

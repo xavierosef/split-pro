@@ -302,7 +302,7 @@ export const AddOrEditExpensePage: React.FC<{
           {t('actions.save')}
         </Button>{' '}
       </div>
-      <UserInput isEditing={Boolean(expenseId)} />
+      {!group && <UserInput isEditing={Boolean(expenseId)} />}
       {showFriends || (1 === participants.length && !group) ? (
         <SelectUserOrGroup enableSendingInvites={enableSendingInvites} />
       ) : (

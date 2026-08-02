@@ -2,26 +2,22 @@ import { clsx } from 'clsx';
 import {
   Archive,
   BarChartHorizontal,
-  Check,
   ChevronLeft,
   DoorOpen,
   Info,
   Merge,
   PlusIcon,
-  Share,
   Trash2,
-  UserPlus,
   X,
 } from 'lucide-react';
 import { type GetServerSideProps } from 'next';
 import Head from 'next/head';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { Fragment, useCallback, useEffect, useState } from 'react';
+import { Fragment, useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
 import { BalanceList } from '~/components/Expense/BalanceList';
 import { ExpenseList } from '~/components/Expense/ExpenseList';
-import AddMembers from '~/components/group/AddMembers';
 import GroupMyBalance from '~/components/group/GroupMyBalance';
 import NoMembers from '~/components/group/NoMembers';
 import MainLayout from '~/components/Layout/MainLayout';
@@ -64,32 +60,6 @@ const BalancePage: NextPageWithUser<{
   const updateGroupDetailsMutation = api.group.updateGroupDetails.useMutation();
   const upsertDefaultSplitMutation = api.group.upsertDefaultSplit.useMutation();
   const clearDefaultSplitMutation = api.group.clearDefaultSplit.useMutation();
-
-  const [isInviteCopied, setIsInviteCopied] = useState(false);
-
-  const inviteMembers = useCallback(async () => {
-    if (!groupDetailQuery.data) {
-      return;
-    }
-    const inviteLink = `${window.location.origin}/join-group?groupId=${groupDetailQuery.data.publicId}`;
-
-    if (navigator.share) {
-      navigator
-        .share({
-          title: `${t('invite_message.join_to')} ${groupDetailQuery.data.name} ${t('invite_message.in_splitpro')}`,
-          text: t('invite_message.text'),
-          url: inviteLink,
-        })
-        .then(() => console.info('Successful share'))
-        .catch((error) => console.error('Error sharing', error));
-    } else {
-      await navigator.clipboard.writeText(inviteLink);
-      setIsInviteCopied(true);
-      setTimeout(() => {
-        setIsInviteCopied(false);
-      }, 2000);
-    }
-  }, [groupDetailQuery.data, t]);
 
   const isAdmin = groupDetailQuery.data?.userId === user.id;
   const isArchived = Boolean(groupDetailQuery.data?.archivedAt);
@@ -515,37 +485,18 @@ const BalancePage: NextPageWithUser<{
                 groupId={groupId}
               />
             </div>
-            <div className="mb-4 flex justify-center gap-2 overflow-y-auto border-b pb-4">
-              <Link href={`/add?groupId=${groupId}`}>
-                <Button size="sm" className="w-40 gap-1 text-sm lg:w-[180px]" disabled={isArchived}>
-                  <PlusIcon className="size-4" /> {t('actions.add_expense')}
+            <div className="mb-4 border-b pb-2" />
+            {!isArchived && (
+              <Link
+                href={`/add?groupId=${groupId}`}
+                aria-label={t('actions.add_expense')}
+                className="fixed right-5 bottom-28 z-50 lg:bottom-8"
+              >
+                <Button size="icon" className="size-14 rounded-full shadow-lg">
+                  <PlusIcon className="size-6" />
                 </Button>
               </Link>
-
-              <AddMembers group={groupDetailQuery.data} enableSendingInvites={enableSendingInvites}>
-                <Button size="sm" responsiveIcon variant="secondary" disabled={isArchived}>
-                  <UserPlus className="size-4 text-gray-400" /> {t('group_details.add_members')}
-                </Button>
-              </AddMembers>
-
-              <Button
-                size="sm"
-                responsiveIcon
-                variant="secondary"
-                onClick={inviteMembers}
-                disabled={isArchived}
-              >
-                {isInviteCopied ? (
-                  <>
-                    <Check className="size-4" /> {t('group_details.copied')}
-                  </>
-                ) : (
-                  <>
-                    <Share className="size-4 text-gray-400" /> {t('actions.invite')}
-                  </>
-                )}
-              </Button>
-            </div>
+            )}
             <Tabs defaultValue="expenses">
               <TabsList className="mx-auto grid w-full max-w-96 grid-cols-2">
                 <TabsTrigger value="expenses">{t('group_details.tabs.expenses')}</TabsTrigger>
