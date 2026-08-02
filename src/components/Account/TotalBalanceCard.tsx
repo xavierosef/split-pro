@@ -9,7 +9,14 @@ import { api } from '~/utils/api';
 const REFERENCE_AMOUNT = 300;
 const fillRatio = (amount: number) => 0.1 + 0.72 * (1 - Math.exp(-Math.abs(amount) / REFERENCE_AMOUNT));
 
-const WAVE = 'M0,10 C40,0 60,20 100,10 C140,0 160,20 200,10 L200,60 L0,60 Z';
+// Trois profils de vague differents : superposes a des vitesses et des
+// amplitudes distinctes, ils ne se resynchronisent jamais, ce qui donne
+// l'impression d'un liquide reellement agite plutot que d'une boucle.
+const WAVES = [
+  { d: 'M0,12 C25,2 45,22 70,12 C95,2 115,22 140,12 C165,2 185,22 200,12 L200,80 L0,80 Z', duration: 5, opacity: 0.6, height: 'h-7' },
+  { d: 'M0,14 C30,26 50,4 80,14 C110,24 130,4 160,14 C180,20 195,10 200,14 L200,80 L0,80 Z', duration: 8, opacity: 0.4, height: 'h-9' },
+  { d: 'M0,16 C20,8 40,24 60,16 C90,6 120,26 150,16 C175,8 190,20 200,16 L200,80 L0,80 Z', duration: 12, opacity: 0.28, height: 'h-11' },
+];
 
 export const TotalBalanceCard: React.FC = () => {
   const { t, i18n, displayName } = useTranslationWithUtils();
@@ -60,39 +67,36 @@ export const TotalBalanceCard: React.FC = () => {
 
   return (
     <div className="liquid-glass relative mb-6 h-40 overflow-hidden rounded-3xl">
-      <motion.div className="absolute inset-x-0 bottom-0" style={{ height }}>
-        <div className="absolute inset-0 top-3" style={{ background: tint, opacity: 0.55 }} />
-        {[
-          { duration: 7, opacity: 0.55, delay: 0 },
-          { duration: 11, opacity: 0.35, delay: -3 },
-        ].map((wave, i) => (
+      <motion.div
+        className="absolute inset-x-0 bottom-0"
+        style={{ height }}
+        animate={{ y: [0, -3, 1, -2, 0] }}
+        transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+      >
+        <div className="absolute inset-0 top-4" style={{ background: tint, opacity: 0.5 }} />
+        {WAVES.map((wave, i) => (
           <motion.svg
             key={i}
-            className="absolute inset-x-0 top-0 h-6 w-[200%]"
-            viewBox="0 0 200 60"
+            className={`absolute inset-x-0 top-0 w-[200%] ${wave.height}`}
+            viewBox="0 0 200 80"
             preserveAspectRatio="none"
             style={{ fill: tint, opacity: wave.opacity }}
             animate={{ x: ['0%', '-50%'] }}
-            transition={{
-              duration: wave.duration,
-              delay: wave.delay,
-              repeat: Infinity,
-              ease: 'linear',
-            }}
+            transition={{ duration: wave.duration, repeat: Infinity, ease: 'linear' }}
           >
-            <path d={WAVE} />
+            <path d={wave.d} />
           </motion.svg>
         ))}
       </motion.div>
 
       <div className="relative flex h-full flex-col justify-center px-5">
-        <p className="text-muted-foreground text-xs tracking-wide uppercase">
+        <p className="text-foreground/90 text-sm font-medium tracking-wide drop-shadow-[0_1px_3px_rgba(0,0,0,0.45)]">
           {owed
             ? t('ui.owes_you', { friend: displayName(primary.friend) })
             : t('ui.you_owe', { friend: displayName(primary.friend) })}
         </p>
         <motion.p
-          className="mt-1 text-4xl font-semibold tabular-nums"
+          className="mt-1 text-4xl font-semibold tabular-nums drop-shadow-[0_2px_6px_rgba(0,0,0,0.45)]"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}

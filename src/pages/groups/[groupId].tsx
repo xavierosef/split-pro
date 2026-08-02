@@ -459,7 +459,7 @@ const BalancePage: NextPageWithUser<{
           </div>
         ) : (
           <div className="transition-discrete starting:opacity-0">
-            <div className="mb-4">
+            <div className="mb-1">
               {isArchived && (
                 <div className="mb-4 flex justify-center gap-2 overflow-y-auto pb-4">
                   <p>
@@ -475,7 +475,6 @@ const BalancePage: NextPageWithUser<{
                 groupId={groupId}
               />
             </div>
-            <div className="mb-3 border-b pb-1" />
             {!isArchived && <AddExpenseFab groupId={groupId} label={t('actions.add_expense')} />}
             <ExpenseList
               userId={user.id}

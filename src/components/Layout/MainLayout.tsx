@@ -88,7 +88,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({
         </div>
       </div>
 
-      <nav className="liquid-glass liquid-glass--nav fixed inset-x-6 bottom-[calc(env(safe-area-inset-bottom)+0.65rem)] flex justify-around rounded-full p-1 lg:hidden">
+      <nav className="liquid-glass liquid-glass--nav fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+0.6rem)] mx-auto flex max-w-md justify-between gap-1 rounded-[1.6rem] p-1.5 lg:hidden">
         {NAV_ITEMS.map(({ key, link, match, Icon }) => (
           <NavItem
             key={key}
@@ -121,30 +121,30 @@ const NavItem: React.FC<NavItemProps> = ({ title, Icon, link, currentPath, match
     <Link
       href={link}
       aria-current={isActive ? 'page' : undefined}
-      className="relative flex flex-1 items-center justify-center rounded-full py-2.5"
+      className="relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-[1.15rem] px-1 py-2"
     >
       {isActive && (
         <motion.span
           layoutId="nav-pill"
           transition={SPRING}
-          className="liquid-glass-pill absolute inset-0 rounded-full"
+          className="liquid-glass-pill absolute inset-0 rounded-[1.15rem]"
         />
       )}
       <motion.span
-        className="relative z-10 flex items-center gap-1.5"
-        animate={{ scale: isActive ? 1 : 0.94 }}
-        whileTap={{ scale: 0.88 }}
+        className="relative z-10 flex flex-col items-center gap-1"
+        animate={{ scale: isActive ? 1 : 0.95 }}
+        whileTap={{ scale: 0.9 }}
         transition={SPRING}
       >
-        <Icon className={clsx('size-5', isActive ? 'text-primary' : 'text-muted-foreground')} />
-        <motion.span
-          className="text-primary overflow-hidden text-xs font-medium whitespace-nowrap"
-          initial={false}
-          animate={{ width: isActive ? 'auto' : 0, opacity: isActive ? 1 : 0 }}
-          transition={SPRING}
+        <Icon className={clsx('size-5.5', isActive ? 'text-primary' : 'text-muted-foreground')} />
+        <span
+          className={clsx(
+            'max-w-full truncate text-[0.68rem] leading-none font-medium',
+            isActive ? 'text-primary' : 'text-muted-foreground',
+          )}
         >
           {title}
-        </motion.span>
+        </span>
       </motion.span>
     </Link>
   );
