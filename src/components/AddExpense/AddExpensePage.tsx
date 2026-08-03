@@ -5,7 +5,7 @@ import React, { useCallback } from 'react';
 import { useCategoryMemory } from '~/hooks/useCategoryMemory';
 import { getAutoFocusTarget } from '~/lib/autoFocusPreference';
 import { DEFAULT_CATEGORY } from '~/lib/category';
-import { type CurrencyCode } from '~/lib/currency';
+import { CURRENCIES, type CurrencyCode } from '~/lib/currency';
 import { useAddExpenseStore } from '~/store/addStore';
 import { api } from '~/utils/api';
 
@@ -377,7 +377,7 @@ export const AddOrEditExpensePage: React.FC<{
               placeholder={t('expense_details.add_expense_details.description_placeholder')}
               value={description}
               onChange={handleDescriptionChange}
-              className="text-lg placeholder:text-sm"
+              className="h-14 rounded-2xl text-lg placeholder:text-sm"
               onKeyDown={(e) => {
                 if ('Enter' === e.key) {
                   amountRef.current?.focus();
@@ -386,7 +386,18 @@ export const AddOrEditExpensePage: React.FC<{
             />
           </div>
           <div className="flex gap-2">
-            <CurrencyPicker currentCurrency={currency} onCurrencyPick={onCurrencyPick} />
+            <CurrencyPicker
+              currentCurrency={currency}
+              onCurrencyPick={onCurrencyPick}
+              trigger={
+                <Button
+                  variant="outline"
+                  className="h-14 w-16 shrink-0 rounded-2xl p-0 text-2xl font-medium"
+                >
+                  {CURRENCIES[currency]?.symbolNative ?? currency}
+                </Button>
+              }
+            />
             <CurrencyInput
               ref={amountRef}
               placeholder={t('expense_details.add_expense_details.amount_placeholder')}
@@ -395,6 +406,7 @@ export const AddOrEditExpensePage: React.FC<{
               allowNegative
               hideSymbol
               onValueChange={onUpdateAmount}
+              className="h-14 rounded-2xl"
               rightIcon={currencyConversionComponent}
             />
           </div>

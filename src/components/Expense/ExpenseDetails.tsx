@@ -3,7 +3,7 @@ import { isSameDay } from 'date-fns';
 import { type User as NextUser } from 'next-auth';
 
 import type { inferRouterOutputs } from '@trpc/server';
-import { ArrowRightIcon, Landmark, Merge, PencilIcon, Users } from 'lucide-react';
+import { ArrowRightIcon, Landmark, Merge, PencilIcon, Repeat, Users } from 'lucide-react';
 import Link from 'next/link';
 import React, { type ComponentProps, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
@@ -25,7 +25,6 @@ import { Button } from '../ui/button';
 import { CategoryTile } from './CategoryTile';
 import { CurrencyInput } from '../ui/currency-input';
 import { AppDrawer } from '../ui/drawer';
-import { Separator } from '../ui/separator';
 import { Receipt } from './Receipt';
 import { DateSelector } from '../AddExpense/DateSelector';
 
@@ -41,6 +40,7 @@ const ExpenseDetails: React.FC<ExpenseDetailsProps> = ({ user, expense }) => {
 
   const { color: categoryColor, name: categoryName } = useCategoryResolver();
   const categoryLabel = categoryName(expense.category);
+  const tint = categoryColor(expense.category);
 
   const { cronParser, i18nReady } = useIntlCronParser();
 
@@ -63,53 +63,76 @@ const ExpenseDetails: React.FC<ExpenseDetailsProps> = ({ user, expense }) => {
 
   return (
     <>
-      <div className="mb-4 flex items-start justify-between gap-2">
-        <div className="flex items-start gap-4">
-          <CategoryTile category={expense.category} className="size-12 rounded-2xl" iconSize={24} />
-          <div className="flex flex-col gap-2">
-            <div className="flex flex-col gap-0.5">
-              <div className="flex w-full items-center gap-2">
-                <p>{expense.name}</p>
-                {expense.transactionId && <Landmark className="text-positive h-4 w-4" />}
-              </div>
-              {categoryLabel ? (
-                <p className="text-xs" style={{ color: categoryColor(expense.category) }}>
-                  {categoryLabel}
-                </p>
-              ) : null}
+      {/* Le montant est l'information qu'on vient chercher : il tient la carte,
+          le reste s'ordonne autour. La couleur de la categorie teinte le halo
+          plutot qu'une pastille flottante, pour un seul accent au lieu de deux. */}
+      <div className="liquid-glass relative mb-6 overflow-hidden rounded-3xl px-5 py-5">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -top-20 -right-12 size-48 rounded-full opacity-30 blur-3xl"
+          style={{ backgroundColor: tint }}
+        />
+
+        <div className="relative flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <p className="truncate text-2xl leading-tight font-semibold">{expense.name}</p>
+              {expense.transactionId && <Landmark className="text-positive size-4 shrink-0" />}
             </div>
-            <p className="text-2xl font-semibold">{toUIString(expense.amount)}</p>
-            {!isSameDay(expense.expenseDate, expense.createdAt) ? (
-              <p className="text-sm text-gray-500">
-                {toUIDate(expense.expenseDate, { year: true })}
-              </p>
+            {categoryLabel ? (
+              <div className="mt-2 flex items-center gap-2">
+                <CategoryTile
+                  category={expense.category}
+                  className="size-7 rounded-lg"
+                  iconSize={15}
+                />
+                <span className="text-sm font-medium" style={{ color: tint }}>
+                  {categoryLabel}
+                </span>
+              </div>
             ) : null}
-            {expense.updatedByUser ? (
-              <p className="text-sm text-gray-500">
+          </div>
+          {expense.fileKey ? <Receipt fileKey={expense.fileKey} /> : null}
+        </div>
+
+        <p className="relative mt-5 text-4xl font-bold tracking-tight tabular-nums">
+          {toUIString(expense.amount)}
+        </p>
+
+        <div className="text-muted-foreground relative mt-3 flex flex-wrap items-center gap-x-2 text-xs">
+          {!isSameDay(expense.expenseDate, expense.createdAt) ? (
+            <>
+              <span>{toUIDate(expense.expenseDate, { year: true })}</span>
+              <span aria-hidden>·</span>
+            </>
+          ) : null}
+          {expense.deletedByUser ? (
+            <span className="text-negative">
+              {t('ui.deleted_by')} {displayName(expense.deletedByUser, user.id, 'dativus')}{' '}
+              {t('ui.on')} {toUIDate(expense.deletedAt ?? expense.createdAt, { year: true })}
+            </span>
+          ) : (
+            <span>
+              {t('ui.added_by')} {displayName(expense.addedByUser, user.id, 'dativus')} {t('ui.on')}{' '}
+              {toUIDate(expense.createdAt, { year: true })}
+            </span>
+          )}
+          {expense.updatedByUser ? (
+            <>
+              <span aria-hidden>·</span>
+              <span>
                 {t('ui.edited_by')} {displayName(expense.updatedByUser, user.id, 'dativus')}{' '}
                 {t('ui.on')} {toUIDate(expense.updatedAt, { year: true })}
-              </p>
-            ) : null}
-            {expense.deletedByUser ? (
-              <p className="text-negative text-sm">
-                {t('ui.deleted_by')} {displayName(expense.deletedByUser, user.id, 'dativus')}{' '}
-                {t('ui.on')} {toUIDate(expense.deletedAt ?? expense.createdAt, { year: true })}
-              </p>
-            ) : (
-              <p className="text-sm text-gray-500">
-                {t('ui.added_by')} {displayName(expense.addedByUser, user.id, 'dativus')}{' '}
-                {t('ui.on')} {toUIDate(expense.createdAt, { year: true })}
-              </p>
-            )}
-            {expense.recurrence ? (
-              <Link href="/recurring" className="text-primary text-sm hover:underline">
-                {t('recurrence.recurring')}
-                {i18nReady ? `: ${cronString}` : ''}
-              </Link>
-            ) : null}
+              </span>
+            </>
+          ) : null}
+        </div>
+
+        {expense.recurrence || expense.group ? (
+          <div className="relative mt-4 flex flex-wrap items-center gap-2">
             {expense.group ? (
               <Link href={`/groups/${expense.group.id}`}>
-                <Button variant="outline" size="sm" className="mt-2 gap-2">
+                <Button variant="outline" size="sm" className="h-8 gap-2 rounded-full">
                   <div className="relative">
                     <Users className="size-4" />
                     {expense.group.simplifyDebts && (
@@ -120,12 +143,19 @@ const ExpenseDetails: React.FC<ExpenseDetailsProps> = ({ user, expense }) => {
                 </Button>
               </Link>
             ) : null}
+            {expense.recurrence ? (
+              <Link href="/recurring">
+                <Button variant="outline" size="sm" className="h-8 gap-2 rounded-full">
+                  <Repeat className="size-4" />
+                  {i18nReady && cronString ? cronString : t('recurrence.recurring')}
+                </Button>
+              </Link>
+            ) : null}
           </div>
-        </div>
-        <div>{expense.fileKey ? <Receipt fileKey={expense.fileKey} /> : null}</div>
+        ) : null}
       </div>
-      <Separator />
-      <div className="mt-10 flex items-center gap-2">
+
+      <div className="flex items-center gap-2">
         <Link
           href={
             expense.paidByUser.id === user.id ? '/balances' : `/balances/${expense.paidByUser.id}`

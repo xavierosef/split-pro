@@ -26,7 +26,10 @@ const ITEM_TO_SECTION = Object.entries(CATEGORIES).reduce<Record<string, string>
   {},
 );
 
+export const categorySection = (category?: string | null): keyof typeof CATEGORIES | null =>
+  (ITEM_TO_SECTION[category ?? ''] as keyof typeof CATEGORIES | undefined) ?? null;
+
 export const categoryColor = (category?: string | null): string => {
-  const section = ITEM_TO_SECTION[category ?? 'general'] ?? 'general';
-  return SECTION_COLORS[section as keyof typeof CATEGORIES] ?? SECTION_COLORS.general;
+  const section = categorySection(category) ?? 'general';
+  return SECTION_COLORS[section] ?? SECTION_COLORS.general;
 };

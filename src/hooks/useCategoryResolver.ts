@@ -2,7 +2,7 @@ import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'next-i18next';
 import { type LucideIcon } from 'lucide-react';
 
-import { categoryColor } from '~/lib/categoryColors';
+import { categoryColor, categorySection } from '~/lib/categoryColors';
 import { customIcon } from '~/lib/customCategoryIcons';
 import { isCustomCategory } from '~/lib/customCategories';
 import { api } from '~/utils/api';
@@ -31,8 +31,25 @@ export const useCategoryResolver = () => {
     [byId],
   );
 
+  // Les libelles d'origine vivent sous categories_list.<famille>.items.<cle> ;
+  // une categorie « other » est stockee sous le nom de sa famille.
   const name = useCallback(
-    (category?: string | null) => byId.get(category ?? '')?.name ?? t(`flat.${category}`, ''),
+    (category?: string | null) => {
+      const custom = byId.get(category ?? '');
+      if (custom) {
+        return custom.name;
+      }
+
+      const section = categorySection(category);
+      if (!section) {
+        return '';
+      }
+
+      const familyName = t(`categories_list.${section}.name`);
+      return category === section
+        ? familyName
+        : t(`categories_list.${section}.items.${category}`, familyName);
+    },
     [byId, t],
   );
 

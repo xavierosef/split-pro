@@ -1,4 +1,4 @@
-import { memo, useCallback, useMemo } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 
 import { CURRENCIES, type CurrencyCode, parseCurrencyCode } from '~/lib/currency';
 
@@ -12,11 +12,13 @@ function CurrencyPickerInner({
   currentCurrency,
   onCurrencyPick,
   allowClear = false,
+  trigger: triggerOverride,
 }: {
   className?: string;
   currentCurrency?: CurrencyCode | null;
   onCurrencyPick: (currency: CurrencyCode | null) => void;
   allowClear?: boolean;
+  trigger?: React.ReactNode;
 }) {
   const { t, getCurrencyName } = useTranslationWithUtils(['currencies']);
   const { recentCurrencies, addToRecentCurrencies } = useCurrencyPreferenceStore();
@@ -34,12 +36,13 @@ function CurrencyPickerInner({
   }, [onCurrencyPick]);
 
   const trigger = useMemo(
-    () => (
-      <Button variant="outline" className="w-[70px] rounded-lg py-2 text-base">
-        {currentCurrency ?? ''}
-      </Button>
-    ),
-    [currentCurrency],
+    () =>
+      triggerOverride ?? (
+        <Button variant="outline" className="w-[70px] rounded-lg py-2 text-base">
+          {currentCurrency ?? ''}
+        </Button>
+      ),
+    [currentCurrency, triggerOverride],
   );
 
   const recentCurrencyObjects = useMemo(

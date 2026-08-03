@@ -17,8 +17,8 @@ export const CategoryPicker: React.FC<{
 
   const trigger = useMemo(
     () => (
-      <div className="flex w-[73px] cursor-pointer justify-center rounded-lg border py-2">
-        <CategoryTile category={category} className="size-8 rounded-lg" iconSize={18} />
+      <div className="flex h-14 w-16 shrink-0 cursor-pointer items-center justify-center rounded-2xl border">
+        <CategoryTile category={category} className="size-9 rounded-xl" iconSize={20} />
       </div>
     ),
     [category],
