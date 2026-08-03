@@ -73,7 +73,7 @@ export const TotalBalanceCard: React.FC = () => {
 
   if (!primary) {
     return (
-      <div className="liquid-glass mb-6 rounded-3xl px-5 py-6 text-center">
+      <div className="liquid-glass mb-5 rounded-3xl px-5 py-4 text-center">
         <p className="text-lg font-medium">{t('ui.settled_up')}</p>
       </div>
     );
@@ -82,7 +82,7 @@ export const TotalBalanceCard: React.FC = () => {
   const tint = owed ? 'var(--color-positive)' : 'var(--color-negative)';
 
   return (
-    <div className="liquid-glass relative mb-6 h-40 overflow-hidden rounded-3xl">
+    <div className="liquid-glass relative mb-5 h-26 overflow-hidden rounded-3xl">
       <motion.div
         className="absolute -inset-x-4 -bottom-3"
         style={{ height }}
@@ -111,14 +111,14 @@ export const TotalBalanceCard: React.FC = () => {
         ))}
       </motion.div>
 
-      <div className="relative flex h-full flex-col justify-center px-5">
+      <div className="relative flex h-full flex-col justify-center gap-0.5 px-5">
         <p className="text-foreground/90 text-sm font-medium tracking-wide drop-shadow-[0_1px_3px_rgba(0,0,0,0.45)]">
           {owed
             ? t('ui.owes_you', { friend: displayName(primary.friend) })
             : t('ui.you_owe', { friend: displayName(primary.friend) })}
         </p>
         <motion.p
-          className="mt-1 text-4xl font-semibold tabular-nums drop-shadow-[0_2px_6px_rgba(0,0,0,0.45)]"
+          className="text-3xl font-semibold tabular-nums drop-shadow-[0_2px_6px_rgba(0,0,0,0.45)]"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
