@@ -1,4 +1,4 @@
-import { CreditCard, Download, FileDown, Languages } from 'lucide-react';
+import { CreditCard, FileDown, Languages, LogOut } from 'lucide-react';
 import type { GetServerSideProps } from 'next';
 import { signOut } from 'next-auth/react';
 import { useTranslation } from 'next-i18next';
@@ -7,7 +7,6 @@ import { useRouter } from 'next/router';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { AccountButton } from '~/components/Account/AccountButton';
-import { DownloadAppDrawer } from '~/components/Account/DownloadAppDrawer';
 import { LanguagePicker } from '~/components/Account/LanguagePicker';
 import { SubmitFeedback } from '~/components/Account/SubmitFeedback';
 import { AutoFocusPicker } from '~/components/Account/AutoFocusPicker';
@@ -17,6 +16,7 @@ import { TotalBalanceCard } from '~/components/Account/TotalBalanceCard';
 import { SubscribeNotification } from '~/components/Account/SubscribeNotification';
 import { UpdateName } from '~/components/Account/UpdateDetails';
 import MainLayout from '~/components/Layout/MainLayout';
+import { SimpleConfirmationDialog } from '~/components/SimpleConfirmationDialog';
 import { EntityAvatar } from '~/components/ui/avatar';
 import { Button } from '~/components/ui/button';
 import { env } from '~/env';
@@ -140,28 +140,24 @@ const AccountPage: NextPageWithUser<{
 
           <SubscribeNotification />
 
-          <DownloadAppDrawer>
-            <AccountButton>
-              <Download className="size-5 text-blue-500" />
-              {t('account.download_app')}
-            </AccountButton>
-          </DownloadAppDrawer>
-
           <AccountButton onClick={downloadData} disabled={downloading} loading={downloading}>
             <FileDown className="size-5 text-teal-500" />
             {t('account.download_splitpro_data')}
           </AccountButton>
 
-        </div>
-
-        <div className="mt-2 flex justify-center">
-          <Button
-            variant="ghost"
-            className="text-orange-600 hover:text-orange-600/90"
-            onClick={onSignOut}
+          <SimpleConfirmationDialog
+            title={t('account.logout_confirm_title')}
+            description={t('account.logout_confirm_description')}
+            hasPermission
+            loading={false}
+            onConfirm={onSignOut}
+            variant="destructive"
           >
-            {t('account.logout')}
-          </Button>
+            <AccountButton className="text-red-500 hover:text-red-500/90">
+              <LogOut className="size-5 text-red-500" />
+              {t('account.logout')}
+            </AccountButton>
+          </SimpleConfirmationDialog>
         </div>
       </MainLayout>
     </>

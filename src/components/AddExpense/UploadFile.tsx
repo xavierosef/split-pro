@@ -10,7 +10,7 @@ import { Input } from '../ui/input';
 import { Label } from '../ui/label';
 import { useAppStore } from '~/store/appStore';
 
-export const UploadFile: React.FC = () => {
+export const UploadFile: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   const { t } = useTranslation();
   const [file, setFile] = useState<File | null>(null);
   const maxUploadFileSizeMB = useAppStore((s) => s.maxUploadFileSizeMB);
@@ -59,12 +59,13 @@ export const UploadFile: React.FC = () => {
   );
 
   return (
-    <Label htmlFor="picture" className="cursor-pointer">
-      {file || fileKey ? (
-        <ImageUploaded className="text-primary h-6 w-6" />
-      ) : (
-        <ImagePlus className="h-6 w-6 text-muted-foreground" />
-      )}
+    <Label htmlFor="picture" className="w-full cursor-pointer">
+      {children ??
+        (file || fileKey ? (
+          <ImageUploaded className="text-primary h-6 w-6" />
+        ) : (
+          <ImagePlus className="text-muted-foreground h-6 w-6" />
+        ))}
       <Input
         onChange={handleFileChange}
         id="picture"

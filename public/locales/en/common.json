@@ -61,6 +61,8 @@
       "note": "Note: It currently only supports importing friends and groups. It will not import transactions. We are working on it."
     },
     "logout": "Logout",
+    "logout_confirm_description": "You will need to sign in with Google again to get back in.",
+    "logout_confirm_title": "Sign out?",
     "messages": {
       "submit_error": "Failed to update details",
       "submit_success": "Details updated"
@@ -194,7 +196,9 @@
       "date_label": "Date",
       "description_placeholder": "Enter description",
       "pick_a_date": "Pick a date",
+      "receipt_added": "Added",
       "receipt_label": "Receipt",
+      "receipt_none": "None",
       "recurrence_label": "Repeat",
       "recurrence_off": "Never",
       "recurrence_on": "On",

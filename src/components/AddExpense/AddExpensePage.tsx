@@ -28,35 +28,33 @@ import { currencyConversion } from '~/utils/numbers';
 import { CurrencyConversionIcon } from '../ui/categoryIcons';
 import { useSession } from 'next-auth/react';
 
-const OptionRow: React.FC<{ label: string; children: React.ReactNode }> = ({
-  label,
-  children,
-}) => (
-  <div className="flex min-h-13 items-center justify-between gap-3 px-4 py-1.5">
+// La ligne entiere est le declencheur : AppDrawer / Popover la clonent via
+// Radix Slot, il faut donc relayer ref et props (onClick en tete).
+const OptionRow = React.forwardRef<
+  HTMLButtonElement,
+  React.ComponentProps<'button'> & { label: string; muted?: boolean }
+>(({ label, children, className, muted, ...props }, ref) => (
+  <button
+    ref={ref}
+    type="button"
+    className={cn(
+      'hover:bg-muted/40 flex min-h-14 w-full items-center justify-between gap-3 px-4 text-left transition-colors',
+      className,
+    )}
+    {...props}
+  >
     <span className="text-muted-foreground shrink-0 text-sm">{label}</span>
-    <div className="flex min-w-0 items-center justify-end">{children}</div>
-  </div>
-);
-
-// Le declencheur d'un AppDrawer est clone par Radix Slot : il faut relayer la
-// ref et les props (dont onClick), sinon la ligne devient inerte.
-const OptionValue = React.forwardRef<HTMLButtonElement, React.ComponentProps<typeof Button>>(
-  ({ children, className, ...props }, ref) => (
-    <Button
-      ref={ref}
-      variant="ghost"
-      className={cn(
-        'text-primary h-9 max-w-full min-w-0 justify-end gap-1 px-1 text-right text-base',
-        className,
-      )}
-      {...props}
-    >
-      <span className="truncate">{children}</span>
+    <span className="flex min-w-0 items-center gap-1">
+      <span
+        className={cn('truncate text-base', muted ? 'text-muted-foreground' : 'text-primary')}
+      >
+        {children}
+      </span>
       <ChevronRight className="text-muted-foreground size-4 shrink-0" />
-    </Button>
-  ),
-);
-OptionValue.displayName = 'OptionValue';
+    </span>
+  </button>
+));
+OptionRow.displayName = 'OptionRow';
 
 export const AddOrEditExpensePage: React.FC<{
   enableSendingInvites: boolean;
@@ -84,7 +82,7 @@ export const AddOrEditExpensePage: React.FC<{
   const cronExpression = useAddExpenseStore((s) => s.cronExpression);
   const multipleTransactions = useAddExpenseStore((s) => s.multipleTransactions);
 
-  const { t, displayName, generateSplitDescription, getCurrencyHelpersCached } =
+  const { t, displayName, generateSplitDescription, getCurrencyHelpersCached, toUIDate } =
     useTranslationWithUtils();
 
   const {
@@ -374,77 +372,61 @@ export const AddOrEditExpensePage: React.FC<{
           </div>
           {amount && '' !== description ? (
             <>
-              <div className="bg-muted/40 mt-5 divide-y divide-white/5 rounded-2xl">
-                <OptionRow label={t(`ui.expense.${isNegative ? 'received_by' : 'paid_by'}`)}>
-                  <PayerSelectionForm>
-                    <OptionValue>{displayName(paidBy, currentUser?.id, 'dativus')}</OptionValue>
-                  </PayerSelectionForm>
-                </OptionRow>
+              <div className="bg-muted/40 mt-5 divide-y divide-white/5 overflow-hidden rounded-2xl">
+                <PayerSelectionForm>
+                  <OptionRow label={t(`ui.expense.${isNegative ? 'received_by' : 'paid_by'}`)}>
+                    {displayName(paidBy, currentUser?.id, 'dativus')}
+                  </OptionRow>
+                </PayerSelectionForm>
 
-                <OptionRow label={t('expense_details.add_expense_details.split_label')}>
-                  <SplitExpenseForm>
-                    <OptionValue>
-                      {generateSplitDescription(
-                        splitType,
-                        participants,
-                        splitShares,
-                        paidBy,
-                        currentUser,
-                      )}
-                    </OptionValue>
-                  </SplitExpenseForm>
-                </OptionRow>
+                <SplitExpenseForm>
+                  <OptionRow label={t('expense_details.add_expense_details.split_label')}>
+                    {generateSplitDescription(
+                      splitType,
+                      participants,
+                      splitShares,
+                      paidBy,
+                      currentUser,
+                    )}
+                  </OptionRow>
+                </SplitExpenseForm>
 
-                <OptionRow label={t('expense_details.add_expense_details.date_label')}>
-                  <DateSelector
-                    mode="single"
-                    required
-                    selected={expenseDate}
-                    onSelect={setExpenseDate}
-                  />
-                </OptionRow>
+                <DateSelector
+                  mode="single"
+                  required
+                  selected={expenseDate}
+                  onSelect={setExpenseDate}
+                >
+                  <OptionRow label={t('expense_details.add_expense_details.date_label')}>
+                    {toUIDate(expenseDate, { useToday: true })}
+                  </OptionRow>
+                </DateSelector>
 
                 {!expenseId && (
-                  <OptionRow label={t('expense_details.add_expense_details.recurrence_label')}>
-                    <RecurrenceInput>
-                      <OptionValue>
-                        {cronExpression
-                          ? t('expense_details.add_expense_details.recurrence_on')
-                          : t('expense_details.add_expense_details.recurrence_off')}
-                      </OptionValue>
-                    </RecurrenceInput>
-                  </OptionRow>
+                  <RecurrenceInput>
+                    <OptionRow
+                      label={t('expense_details.add_expense_details.recurrence_label')}
+                      muted={!cronExpression}
+                    >
+                      {cronExpression
+                        ? t('expense_details.add_expense_details.recurrence_on')
+                        : t('expense_details.add_expense_details.recurrence_off')}
+                    </OptionRow>
+                  </RecurrenceInput>
                 )}
 
-                <OptionRow label={t('expense_details.add_expense_details.receipt_label')}>
-                  <UploadFile />
-                </OptionRow>
-
-                {bankConnectionEnabled && (
-                  <OptionRow label={t('bank_transactions.to_bank')}>
-                    <div className="flex items-center gap-2">
-                      <AddBankTransactions bankConnectionEnabled={bankConnectionEnabled}>
-                        <Button variant="ghost" className="px-2">
-                          <Landmark
-                            className={cn(
-                              transactionId ? 'text-primary' : 'text-muted-foreground',
-                              'size-5',
-                            )}
-                          />
-                        </Button>
-                      </AddBankTransactions>
-                      {transactionId && (
-                        <Button
-                          variant="ghost"
-                          className="px-2 text-red-500"
-                          onClick={clearTransaction}
-                        >
-                          <X className="size-5" />
-                        </Button>
-                      )}
-                    </div>
+                <UploadFile>
+                  <OptionRow
+                    label={t('expense_details.add_expense_details.receipt_label')}
+                    muted={!fileKey}
+                    // le declencheur est le <label> parent, pas ce bouton
+                    tabIndex={-1}
+                  >
+                    {fileKey
+                      ? t('expense_details.add_expense_details.receipt_added')
+                      : t('expense_details.add_expense_details.receipt_none')}
                   </OptionRow>
-                )}
+                </UploadFile>
               </div>
 
               <div className="fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+6.5rem)] z-40 lg:static lg:mt-8">

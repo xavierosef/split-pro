@@ -61,6 +61,8 @@
       "note": "Note : l'import ne fonctionne actuellement que pour les ami⋅es et les groupes, mais pas pour les transactions. On y travaille !"
     },
     "logout": "Déconnexion",
+    "logout_confirm_description": "Il faudra te reconnecter avec Google pour revenir.",
+    "logout_confirm_title": "Se déconnecter ?",
     "messages": {
       "submit_error": "Une erreur est survenue lors de la mise à jour de tes infos de profil",
       "submit_success": "Profil enregistré"
@@ -204,7 +206,9 @@
       "date_label": "Date",
       "description_placeholder": "Description de la dépense",
       "pick_a_date": "Choisir une date",
+      "receipt_added": "Ajouté",
       "receipt_label": "Reçu",
+      "receipt_none": "Aucun",
       "recurrence_label": "Répétition",
       "recurrence_off": "Jamais",
       "recurrence_on": "Activée",

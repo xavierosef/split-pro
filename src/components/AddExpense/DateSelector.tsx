@@ -1,3 +1,4 @@
+import type React from 'react';
 import { useTranslationWithUtils } from '~/hooks/useTranslationWithUtils';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { Button } from '../ui/button';
@@ -9,10 +10,12 @@ import type { DayPickerProps, PropsSingleRequired } from 'react-day-picker';
 type DateSelectorProps = DayPickerProps &
   PropsSingleRequired & {
     popoverPortalled?: boolean;
+    children?: React.ReactNode;
   };
 
 export const DateSelector: React.FC<DateSelectorProps> = ({
   popoverPortalled = true,
+  children,
   ...calendarProps
 }) => {
   const { t, toUIDate } = useTranslationWithUtils();
@@ -21,20 +24,22 @@ export const DateSelector: React.FC<DateSelectorProps> = ({
     <div className="flex flex-wrap items-center gap-4">
       <Popover>
         <PopoverTrigger asChild>
-          <Button
-            variant="ghost"
-            className={cn(
-              'h-9 justify-start p-0 text-left font-normal',
-              !calendarProps.selected && 'text-muted-foreground',
-            )}
-          >
-            <CalendarIcon className="text-primary mr-2 size-6" />
-            {calendarProps.selected ? (
-              toUIDate(calendarProps.selected, { useToday: true })
-            ) : (
-              <span>{t('expense_details.add_expense_details.pick_a_date')}</span>
-            )}
-          </Button>
+          {children ?? (
+            <Button
+              variant="ghost"
+              className={cn(
+                'h-9 justify-start p-0 text-left font-normal',
+                !calendarProps.selected && 'text-muted-foreground',
+              )}
+            >
+              <CalendarIcon className="text-primary mr-2 size-6" />
+              {calendarProps.selected ? (
+                toUIDate(calendarProps.selected, { useToday: true })
+              ) : (
+                <span>{t('expense_details.add_expense_details.pick_a_date')}</span>
+              )}
+            </Button>
+          )}
         </PopoverTrigger>
         <PopoverContent className="w-auto p-0" portalled={popoverPortalled}>
           <Calendar fixedWeeks {...calendarProps} />
