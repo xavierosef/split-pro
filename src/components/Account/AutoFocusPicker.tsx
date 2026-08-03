@@ -1,6 +1,7 @@
-import { motion } from 'motion/react';
+import { Keyboard } from 'lucide-react';
 import { useTranslation } from 'next-i18next';
 import { useEffect, useState } from 'react';
+import { ChoiceRow } from '~/components/Account/ChoiceRow';
 import {
   AUTOFOCUS_TARGETS,
   type AutoFocusTarget,
@@ -14,34 +15,19 @@ export const AutoFocusPicker: React.FC = () => {
 
   useEffect(() => setCurrent(getAutoFocusTarget()), []);
 
-  const pick = (target: AutoFocusTarget) => {
-    setAutoFocusTarget(target);
-    setCurrent(target);
-  };
-
   return (
-    <div>
-      <p className="text-muted-foreground mb-2 text-sm">{t('account.autofocus')}</p>
-      <div className="bg-muted flex gap-1 rounded-full p-1">
-        {AUTOFOCUS_TARGETS.map((target) => (
-          <button
-            key={target}
-            type="button"
-            onClick={() => pick(target)}
-            aria-pressed={current === target}
-            className="relative flex-1 rounded-full py-2 text-sm"
-          >
-            {current === target && (
-              <motion.span
-                layoutId="autofocus-pill"
-                transition={{ type: 'spring', stiffness: 420, damping: 34 }}
-                className="bg-background absolute inset-0 rounded-full shadow-sm"
-              />
-            )}
-            <span className="relative z-10">{t(`account.autofocus_targets.${target}`)}</span>
-          </button>
-        ))}
-      </div>
-    </div>
+    <ChoiceRow
+      label={t('account.autofocus')}
+      icon={<Keyboard className="size-5 text-indigo-400" />}
+      value={current}
+      options={AUTOFOCUS_TARGETS.map((key) => ({
+        key,
+        label: t(`account.autofocus_targets.${key}`),
+      }))}
+      onPick={(key) => {
+        setAutoFocusTarget(key as AutoFocusTarget);
+        setCurrent(key as AutoFocusTarget);
+      }}
+    />
   );
 };

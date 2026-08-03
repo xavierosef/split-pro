@@ -29,31 +29,35 @@ import { CurrencyConversionIcon } from '../ui/categoryIcons';
 import { useSession } from 'next-auth/react';
 
 // La ligne entiere est le declencheur : AppDrawer / Popover la clonent via
-// Radix Slot, il faut donc relayer ref et props (onClick en tete).
+// Radix Slot, il faut donc relayer ref et props (onClick en tete). Slot
+// concatene aussi sa className apres la notre, d'ou l'alignement en style
+// inline : c'est le seul niveau qu'il ne peut pas ecraser.
 const OptionRow = React.forwardRef<
-  HTMLButtonElement,
-  React.ComponentProps<'button'> & { label: string; muted?: boolean }
->(({ label, children, className, muted, ...props }, ref) => (
-  <button
-    ref={ref}
-    type="button"
-    className={cn(
-      'hover:bg-muted/40 flex min-h-14 w-full items-center justify-between gap-3 px-4 text-left transition-colors',
-      className,
-    )}
-    {...props}
-  >
-    <span className="text-muted-foreground shrink-0 text-sm">{label}</span>
-    <span className="flex min-w-0 items-center gap-1">
-      <span
-        className={cn('truncate text-base', muted ? 'text-muted-foreground' : 'text-primary')}
-      >
-        {children}
+  HTMLElement,
+  React.ComponentProps<'button'> & { label: string; muted?: boolean; as?: 'button' | 'span' }
+>(({ label, children, className, muted, as = 'button', ...props }, ref) => {
+  const Tag = as as 'button';
+  return (
+    <Tag
+      ref={ref as React.Ref<HTMLButtonElement>}
+      {...('button' === as ? { type: 'button' as const } : {})}
+      style={{ justifyContent: 'space-between', textAlign: 'left' }}
+      className={cn(
+        'hover:bg-muted/40 flex min-h-14 w-full items-center gap-3 px-4 transition-colors',
+        className,
+      )}
+      {...props}
+    >
+      <span className="text-muted-foreground shrink-0 text-sm">{label}</span>
+      <span className="flex min-w-0 items-center gap-1">
+        <span className={cn('truncate text-base', muted ? 'text-muted-foreground' : 'text-primary')}>
+          {children}
+        </span>
+        <ChevronRight className="text-muted-foreground size-4 shrink-0" />
       </span>
-      <ChevronRight className="text-muted-foreground size-4 shrink-0" />
-    </span>
-  </button>
-));
+    </Tag>
+  );
+});
 OptionRow.displayName = 'OptionRow';
 
 export const AddOrEditExpensePage: React.FC<{
@@ -417,10 +421,9 @@ export const AddOrEditExpensePage: React.FC<{
 
                 <UploadFile>
                   <OptionRow
+                    as="span"
                     label={t('expense_details.add_expense_details.receipt_label')}
                     muted={!fileKey}
-                    // le declencheur est le <label> parent, pas ce bouton
-                    tabIndex={-1}
                   >
                     {fileKey
                       ? t('expense_details.add_expense_details.receipt_added')

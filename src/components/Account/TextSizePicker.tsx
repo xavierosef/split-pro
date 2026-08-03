@@ -1,6 +1,7 @@
-import { motion } from 'motion/react';
-import { useEffect, useState } from 'react';
+import { Type } from 'lucide-react';
 import { useTranslation } from 'next-i18next';
+import { useEffect, useState } from 'react';
+import { ChoiceRow } from '~/components/Account/ChoiceRow';
 
 const STORAGE_KEY = 'cna-text-size';
 const SIZES = [
@@ -24,39 +25,16 @@ export const TextSizePicker: React.FC = () => {
 
   useEffect(() => setCurrent(applyStoredTextSize()), []);
 
-  const pick = (key: SizeKey) => {
-    localStorage.setItem(STORAGE_KEY, key);
-    setCurrent(applyStoredTextSize());
-  };
-
   return (
-    <div>
-      <p className="text-muted-foreground mb-2 text-sm">{t('account.text_size')}</p>
-      <div className="bg-muted flex gap-1 rounded-full p-1">
-        {SIZES.map(({ key, px }) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => pick(key)}
-            aria-pressed={current === key}
-            className="relative flex-1 rounded-full py-2"
-          >
-            {current === key && (
-              <motion.span
-                layoutId="text-size-pill"
-                transition={{ type: 'spring', stiffness: 420, damping: 34 }}
-                className="bg-background absolute inset-0 rounded-full shadow-sm"
-              />
-            )}
-            <span
-              className="relative z-10"
-              style={{ fontSize: `${px * 0.82}px` }}
-            >
-              {t(`account.text_sizes.${key}`)}
-            </span>
-          </button>
-        ))}
-      </div>
-    </div>
+    <ChoiceRow
+      label={t('account.text_size')}
+      icon={<Type className="size-5 text-amber-500" />}
+      value={current}
+      options={SIZES.map(({ key }) => ({ key, label: t(`account.text_sizes.${key}`) }))}
+      onPick={(key) => {
+        localStorage.setItem(STORAGE_KEY, key);
+        setCurrent(applyStoredTextSize());
+      }}
+    />
   );
 };
