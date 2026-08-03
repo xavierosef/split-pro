@@ -336,19 +336,26 @@ export const AddOrEditExpensePage: React.FC<{
   const descriptionRef = React.useRef<HTMLInputElement>(null);
   const amountRef = React.useRef<HTMLInputElement>(null);
 
-  // Le clavier doit sortir sur le champ que l'utilisateur remplit en premier :
-  // le montant par defaut, la description si c'est son habitude.
+  const fieldsVisible = !(showFriends || (1 === participants.length && !group));
+
+  /*
+   * Le clavier doit sortir sur le champ rempli en premier : le montant par
+   * defaut, la description si c'est l'habitude. Le focus part du montage reel
+   * des champs, pas d'un delai fixe : les champs n'apparaissent qu'une fois le
+   * groupe charge, et tout intervalle sans input focalise referme le clavier
+   * amorce par primeAddExpenseKeyboard.
+   */
   React.useEffect(() => {
+    if (!fieldsVisible) {
+      return;
+    }
     const target = getAutoFocusTarget();
     if ('none' === target) {
       return;
     }
-    const timer = setTimeout(() => {
-      const el = 'amount' === target ? amountRef.current : descriptionRef.current;
-      el?.focus();
-    }, 220);
-    return () => clearTimeout(timer);
-  }, []);
+    const el = 'amount' === target ? amountRef.current : descriptionRef.current;
+    el?.focus();
+  }, [fieldsVisible]);
 
   const onBackButtonPress = useCallback(() => {
     router.back();

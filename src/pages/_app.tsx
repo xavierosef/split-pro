@@ -20,6 +20,7 @@ import { api } from '~/utils/api';
 import 'react-easy-crop/react-easy-crop.css';
 import '~/styles/globals.css';
 import { applyStoredTextSize } from '~/components/Account/TextSizePicker';
+import { KeyboardPrimer } from '~/components/KeyboardPrimer';
 import { RouteProgress } from '~/components/Layout/RouteProgress';
 
 const poppins = Poppins({ weight: ['200', '300', '400', '500', '600', '700'], subsets: ['latin'] });
@@ -97,6 +98,7 @@ const MyApp: AppType<{ session: Session | null }> = ({
             <Toaster toastOptions={toastOptions} />
             <TextSizeEffect />
             <RouteProgress />
+            <KeyboardPrimer />
             {(Component as NextPageWithUser).auth ? (
               <Auth pageProps={pageProps} Page={Component as NextPageWithUser} />
             ) : (

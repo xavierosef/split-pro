@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { BalanceEntry } from '~/components/Expense/BalanceEntry';
 import MainLayout from '~/components/Layout/MainLayout';
 import { NotificationModal } from '~/components/NotificationModal';
+import { primeAddExpenseKeyboard } from '~/components/KeyboardPrimer';
 import { Button } from '~/components/ui/button';
 import { ConvertibleBalance } from '~/components/Expense/ConvertibleBalance';
 import { useTranslationWithUtils } from '~/hooks/useTranslationWithUtils';
@@ -108,7 +109,7 @@ const BalancePage: NextPageWithUser = ({ user }) => {
 
           {!balanceQuery.isPending && !balanceQuery.data?.balances.length ? (
             <div className="mt-[40vh] flex -translate-y-[130%] flex-col items-center justify-center gap-6">
-              <Link href="/add">
+              <Link href="/add" onClick={primeAddExpenseKeyboard}>
                 <Button className="w-62.5">
                   <PlusIcon className="mr-2 h-5 w-5 text-black" />
                   {t('actions.add_expense')}

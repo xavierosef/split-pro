@@ -11,6 +11,7 @@ import { Export } from '~/components/Friend/Export';
 import { SettleUp } from '~/components/Friend/Settleup';
 import MainLayout from '~/components/Layout/MainLayout';
 import { EntityAvatar } from '~/components/ui/avatar';
+import { primeAddExpenseKeyboard } from '~/components/KeyboardPrimer';
 import { Button } from '~/components/ui/button';
 import { AppDrawer } from '~/components/ui/drawer';
 import { type NextPageWithUser } from '~/types';
@@ -185,7 +186,10 @@ const FriendPage: NextPageWithUser = ({ user }) => {
                   <HandCoins className="size-4" /> {t('actions.settle_up')}
                 </Button>
               </SettleUp>
-              <Link href={`/add?friendId=${friendQuery.data.id}`}>
+              <Link
+                href={`/add?friendId=${friendQuery.data.id}`}
+                onClick={primeAddExpenseKeyboard}
+              >
                 <Button size="sm" variant="secondary" responsiveIcon>
                   <PlusIcon className="size-4" /> {t('actions.add_expense')}
                 </Button>
