@@ -34,11 +34,11 @@ export const CategoryPicker: React.FC<{
               <AppDrawerClose key={c.id} asChild>
                 <Button
                   variant="ghost"
-                  className="flex h-[75px] w-[75px] flex-col items-center justify-start gap-1 justify-self-center py-3 text-center"
+                  className="flex h-auto min-h-[75px] w-[75px] flex-col items-center justify-start gap-1 justify-self-center py-3 text-center"
                   onClick={() => onCategoryPick(c.id)}
                 >
                   <CategoryTile category={c.id} className="size-8 rounded-lg" iconSize={18} />
-                  <span className="block text-xs text-wrap">{c.name}</span>
+                  <span className="block text-xs leading-tight text-wrap">{c.name}</span>
                 </Button>
               </AppDrawerClose>
             ))}
@@ -63,7 +63,7 @@ export const CategoryPicker: React.FC<{
                 <AppDrawerClose key={key} asChild>
                   <Button
                     variant="ghost"
-                    className="flex h-[75px] w-[75px] flex-col items-center justify-start gap-1 justify-self-center py-3 text-center"
+                    className="flex h-auto min-h-[75px] w-[75px] flex-col items-center justify-start gap-1 justify-self-center py-3 text-center"
                     onClick={handleClick}
                   >
                     <CategoryTile
@@ -71,7 +71,7 @@ export const CategoryPicker: React.FC<{
                       className="size-8 rounded-lg"
                       iconSize={18}
                     />
-                    <span className="block text-xs text-wrap">
+                    <span className="block text-xs leading-tight text-wrap">
                       {t(`categories_list.${categoryName}.items.${key}`, { ns: 'categories' })}
                     </span>
                   </Button>

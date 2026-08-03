@@ -8,6 +8,7 @@ import Link from 'next/link';
 import React, { type ComponentProps, useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import { useCategoryResolver } from '~/hooks/useCategoryResolver';
 import { useIntlCronParser } from '~/hooks/useIntlCronParser';
 import { useTranslationWithUtils } from '~/hooks/useTranslationWithUtils';
 import { cronFromBackend } from '~/lib/cron';
@@ -38,6 +39,9 @@ interface ExpenseDetailsProps {
 const ExpenseDetails: React.FC<ExpenseDetailsProps> = ({ user, expense }) => {
   const { displayName, toUIDate, t, getCurrencyHelpersCached } = useTranslationWithUtils();
 
+  const { color: categoryColor, name: categoryName } = useCategoryResolver();
+  const categoryLabel = categoryName(expense.category);
+
   const { cronParser, i18nReady } = useIntlCronParser();
 
   const cronString = useMemo(() => {
@@ -63,9 +67,16 @@ const ExpenseDetails: React.FC<ExpenseDetailsProps> = ({ user, expense }) => {
         <div className="flex items-start gap-4">
           <CategoryTile category={expense.category} className="size-12 rounded-2xl" iconSize={24} />
           <div className="flex flex-col gap-2">
-            <div className="flex w-full items-center gap-2">
-              <p>{expense.name}</p>
-              {expense.transactionId && <Landmark className="text-positive h-4 w-4" />}
+            <div className="flex flex-col gap-0.5">
+              <div className="flex w-full items-center gap-2">
+                <p>{expense.name}</p>
+                {expense.transactionId && <Landmark className="text-positive h-4 w-4" />}
+              </div>
+              {categoryLabel ? (
+                <p className="text-xs" style={{ color: categoryColor(expense.category) }}>
+                  {categoryLabel}
+                </p>
+              ) : null}
             </div>
             <p className="text-2xl font-semibold">{toUIString(expense.amount)}</p>
             {!isSameDay(expense.expenseDate, expense.createdAt) ? (

@@ -15,7 +15,7 @@ export const CategoryTile: React.FC<{
 
   return (
     <span
-      className={cn('category-tile flex items-center justify-center', className)}
+      className={cn('category-tile flex shrink-0 items-center justify-center', className)}
       style={{ '--category-color': tint } as React.CSSProperties}
     >
       {CustomIcon ? (

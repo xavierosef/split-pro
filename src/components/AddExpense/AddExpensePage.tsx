@@ -2,7 +2,9 @@ import { ChevronRight, Landmark, X } from 'lucide-react';
 import { useRouter } from 'next/router';
 import React, { useCallback } from 'react';
 
+import { useCategoryMemory } from '~/hooks/useCategoryMemory';
 import { getAutoFocusTarget } from '~/lib/autoFocusPreference';
+import { DEFAULT_CATEGORY } from '~/lib/category';
 import { type CurrencyCode } from '~/lib/currency';
 import { useAddExpenseStore } from '~/store/addStore';
 import { api } from '~/utils/api';
@@ -250,11 +252,33 @@ export const AddOrEditExpensePage: React.FC<{
     update,
   ]);
 
+  // La categorie devinee reste modifiable : des que l'utilisateur en choisit
+  // une lui-meme, la memoire se tait jusqu'a la depense suivante.
+  const suggestCategoryFor = useCategoryMemory();
+  const suggestedRef = React.useRef<string | null>(null);
+
+  const onCategoryPick = useCallback(
+    (picked: string) => {
+      suggestedRef.current = null;
+      setCategory(picked);
+    },
+    [setCategory],
+  );
+
   const handleDescriptionChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      setDescription(e.target.value.toString() ?? '');
+      const value = e.target.value.toString() ?? '';
+      setDescription(value);
+
+      if (expenseId || (category !== DEFAULT_CATEGORY && category !== suggestedRef.current)) {
+        return;
+      }
+
+      const guess = suggestCategoryFor(value);
+      suggestedRef.current = guess;
+      setCategory(guess ?? DEFAULT_CATEGORY);
     },
-    [setDescription],
+    [setDescription, setCategory, suggestCategoryFor, category, expenseId],
   );
 
   const clearTransaction = useCallback(() => {
@@ -347,7 +371,7 @@ export const AddOrEditExpensePage: React.FC<{
       ) : (
         <>
           <div className="mt-4 flex gap-2 sm:mt-10">
-            <CategoryPicker category={category} onCategoryPick={setCategory} />
+            <CategoryPicker category={category} onCategoryPick={onCategoryPick} />
             <Input
               ref={descriptionRef}
               placeholder={t('expense_details.add_expense_details.description_placeholder')}

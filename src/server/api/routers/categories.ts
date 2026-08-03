@@ -32,6 +32,28 @@ export const categoriesRouter = createTRPCRouter({
     .input(z.object({ id: z.string() }))
     .query(({ input }) => db.expense.count({ where: { category: input.id, deletedAt: null } })),
 
+  // Les libelles deja utilises, avec leur categorie : l'index que le client
+  // interroge a chaque frappe pour deviner la categorie. Regroupe cote base,
+  // c'est quelques centaines de lignes, donc un seul appel mis en cache.
+  history: protectedProcedure.query(async ({ ctx }) => {
+    const rows = await db.expense.groupBy({
+      by: ['name', 'category'],
+      where: {
+        deletedAt: null,
+        expenseParticipants: { some: { userId: ctx.session.user.id } },
+      },
+      _count: { _all: true },
+      orderBy: { _count: { name: 'desc' } },
+      take: 500,
+    });
+
+    return rows.map((row) => ({
+      name: row.name,
+      category: row.category,
+      count: row._count._all,
+    }));
+  }),
+
   upsert: protectedProcedure
     .input(customCategorySchema.partial({ id: true }))
     .mutation(async ({ input }) => {
