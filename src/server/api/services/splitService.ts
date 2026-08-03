@@ -235,6 +235,15 @@ export async function editExpense(
     throw new Error('Expense not found');
   }
 
+  // Capture avant l'update : la notification annonce l'avant/apres.
+  const before = {
+    name: expense.name,
+    amount: expense.amount,
+    currency: expense.currency,
+    paidBy: expense.paidBy,
+    expenseDate: expense.expenseDate,
+  };
+
   // Determine if this is a template or derived expense
   const templateId = expense.recurrence?.job?.command
     ? extractTemplateExpenseId(expense.recurrence.job.command)
@@ -316,7 +325,7 @@ export async function editExpense(
   // For derived expenses, cronExpression is ignored entirely
 
   await db.$transaction(operations);
-  sendExpensePushNotification(expenseId).catch(console.error);
+  sendExpensePushNotification(expenseId, before).catch(console.error);
   return { id: expenseId }; // Return the updated expense
 }
 

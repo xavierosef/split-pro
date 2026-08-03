@@ -1,10 +1,73 @@
 import { SplitType } from '@prisma/client';
 import { isCurrencyCode } from '~/lib/currency';
+import { type ExpenseFieldChange, describeExpenseChanges } from '~/lib/expenseDiff';
 import { type PushMessage } from '~/types';
 
 import { db } from '~/server/db';
 import { pushNotification } from '~/server/notification';
 import { getCurrencyHelpers } from '~/utils/numbers';
+
+/** L'etat d'une depense avant edition, capture par editExpense. */
+export interface ExpenseSnapshot {
+  name: string;
+  amount: bigint;
+  currency: string;
+  paidBy: number;
+  expenseDate: Date;
+}
+
+const shortDate = new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: '2-digit' });
+
+/*
+ * La categorie est volontairement absente du diff : son libelle lisible vit
+ * dans les fichiers de traduction cote client pour les categories internes, et
+ * dans AppMetadata pour les personnalisees. Annoncer « diningOut → custom:a1b2 »
+ * serait pire que se taire.
+ */
+const collectExpenseChanges = async (
+  before: ExpenseSnapshot,
+  after: ExpenseSnapshot,
+  formatAmount: (currency: string, amount: bigint) => string,
+): Promise<ExpenseFieldChange[]> => {
+  const changes: ExpenseFieldChange[] = [];
+
+  if (before.name !== after.name) {
+    changes.push({ from: before.name, to: after.name });
+  }
+
+  if (before.amount !== after.amount || before.currency !== after.currency) {
+    changes.push({
+      from: formatAmount(before.currency, before.amount),
+      to: formatAmount(after.currency, after.amount),
+    });
+  }
+
+  if (before.paidBy !== after.paidBy) {
+    const payers = await db.user.findMany({
+      where: { id: { in: [before.paidBy, after.paidBy] } },
+      select: { id: true, name: true, email: true },
+    });
+    const payerName = (id: number) => {
+      const payer = payers.find((user) => user.id === id);
+      return payer?.name ?? payer?.email ?? String(id);
+    };
+    changes.push({
+      label: 'paid by',
+      from: payerName(before.paidBy),
+      to: payerName(after.paidBy),
+    });
+  }
+
+  if (before.expenseDate.getTime() !== after.expenseDate.getTime()) {
+    changes.push({
+      label: 'date',
+      from: shortDate.format(before.expenseDate),
+      to: shortDate.format(after.expenseDate),
+    });
+  }
+
+  return changes;
+};
 
 export const getSubscriptionEndpoint = (subscription: string) => {
   try {
@@ -68,7 +131,10 @@ export const sendPushNotificationToUsers = async (userIds: number[], pushData: P
   return { sentCount: pushResults.filter((result) => result.ok).length };
 };
 
-export async function sendExpensePushNotification(expenseId: string) {
+export async function sendExpensePushNotification(
+  expenseId: string,
+  before?: ExpenseSnapshot,
+) {
   const expense = await db.expense.findUnique({
     where: {
       id: expenseId,
@@ -81,6 +147,7 @@ export async function sendExpensePushNotification(expenseId: string) {
       name: true,
       deletedBy: true,
       splitType: true,
+      expenseDate: true,
       deletedByUser: {
         select: {
           name: true,
@@ -143,6 +210,8 @@ export async function sendExpensePushNotification(expenseId: string) {
     return toUIString(amount);
   };
 
+  const changes = before ? await collectExpenseChanges(before, expense, formatAmount) : [];
+
   const getNotificationContent = (): { title: string; message: string } => {
     const payer = getUserDisplayName(expense.paidByUser);
     const adder = getUserDisplayName(expense.addedByUser);
@@ -160,7 +229,9 @@ export async function sendExpensePushNotification(expenseId: string) {
     if (expense.updatedByUser) {
       return {
         title: getUserDisplayName(expense.updatedByUser),
-        message: `Updated ${expense.name} ${amount}`,
+        message: changes.length
+          ? `Updated ${expense.name}: ${describeExpenseChanges(changes)}`
+          : `Updated ${expense.name} ${amount}`,
       };
     }
 
