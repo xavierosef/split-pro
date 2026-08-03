@@ -17,11 +17,17 @@ const ICON_NAMES = Object.keys(CUSTOM_ICONS);
 
 const CategoryForm: React.FC<{
   initial?: CustomCategory;
+  others: CustomCategory[];
   onDone: () => void;
-}> = ({ initial, onDone }) => {
+}> = ({ initial, others, onDone }) => {
   const { t } = useTranslation();
   const utils = api.useUtils();
   const upsert = api.categories.upsert.useMutation();
+
+  // Marquer ce qui est deja pris evite de creer deux categories jumelles
+  // qu'on ne distinguera plus d'un coup d'oeil dans la liste.
+  const usedIcons = new Set(others.filter((c) => c.id !== initial?.id).map((c) => c.icon));
+  const usedColors = new Set(others.filter((c) => c.id !== initial?.id).map((c) => c.color));
 
   const [name, setName] = useState(initial?.name ?? '');
   const [icon, setIcon] = useState(initial?.icon ?? ICON_NAMES[0]!);
@@ -70,10 +76,16 @@ const CategoryForm: React.FC<{
               type="button"
               onClick={() => setColor(c)}
               aria-label={c}
-              className="flex size-9 items-center justify-center rounded-full"
+              className={cn(
+                'relative flex size-9 items-center justify-center rounded-full',
+                c === color && 'ring-primary ring-2 ring-offset-2 ring-offset-transparent',
+              )}
               style={{ backgroundColor: c }}
             >
               {c === color && <Check className="size-4 text-white" strokeWidth={3} />}
+              {c !== color && usedColors.has(c) && (
+                <span className="bg-background absolute -top-0.5 -right-0.5 size-2.5 rounded-full ring-1 ring-white/40" />
+              )}
             </button>
           ))}
         </div>
@@ -81,7 +93,7 @@ const CategoryForm: React.FC<{
 
       <div>
         <p className="text-muted-foreground mb-2 text-sm">{t('account.categories.icon')}</p>
-        <div className="grid max-h-52 grid-cols-[repeat(auto-fill,minmax(48px,1fr))] gap-2 overflow-y-auto">
+        <div className="grid max-h-64 grid-cols-[repeat(auto-fill,minmax(48px,1fr))] gap-2 overflow-y-auto">
           {ICON_NAMES.map((n) => {
             const Icon = CUSTOM_ICONS[n]!;
             return (
@@ -91,11 +103,18 @@ const CategoryForm: React.FC<{
                 onClick={() => setIcon(n)}
                 aria-label={n}
                 className={cn(
-                  'flex size-12 items-center justify-center rounded-xl border',
+                  'relative flex size-12 items-center justify-center rounded-xl border',
                   n === icon ? 'border-primary' : 'border-transparent',
                 )}
               >
-                <Icon size={20} style={{ color: n === icon ? color : undefined }} />
+                <Icon
+                  size={20}
+                  className={cn(n !== icon && usedIcons.has(n) && 'opacity-40')}
+                  style={{ color: n === icon ? color : undefined }}
+                />
+                {n !== icon && usedIcons.has(n) && (
+                  <span className="bg-muted-foreground absolute right-1.5 bottom-1.5 size-1.5 rounded-full" />
+                )}
               </button>
             );
           })}
@@ -114,7 +133,10 @@ const CategoryForm: React.FC<{
   );
 };
 
-const CategoryLine: React.FC<{ category: CustomCategory }> = ({ category }) => {
+const CategoryLine: React.FC<{ category: CustomCategory; others: CustomCategory[] }> = ({
+  category,
+  others,
+}) => {
   const { t } = useTranslation();
   const utils = api.useUtils();
   const remove = api.categories.delete.useMutation();
@@ -135,7 +157,7 @@ const CategoryLine: React.FC<{ category: CustomCategory }> = ({ category }) => {
           </button>
         }
       >
-        <CategoryForm initial={category} onDone={() => setEditing(false)} />
+        <CategoryForm initial={category} others={others} onDone={() => setEditing(false)} />
       </AppDrawer>
 
       <SimpleConfirmationDialog
@@ -169,7 +191,9 @@ export const CategoryEditor: React.FC = () => {
   return (
     <div className="flex flex-col gap-2 pb-6">
       {categories.data?.length ? (
-        categories.data.map((c) => <CategoryLine key={c.id} category={c} />)
+        categories.data.map((c) => (
+          <CategoryLine key={c.id} category={c} others={categories.data ?? []} />
+        ))
       ) : (
         <p className="text-muted-foreground py-4 text-center text-sm">
           {t('account.categories.empty')}
@@ -191,7 +215,7 @@ export const CategoryEditor: React.FC = () => {
           </Button>
         }
       >
-        <CategoryForm onDone={() => setCreating(false)} />
+        <CategoryForm others={categories.data ?? []} onDone={() => setCreating(false)} />
       </AppDrawer>
     </div>
   );

@@ -1,8 +1,8 @@
 import { type BalanceView, type User } from '@prisma/client';
 import React, { useMemo } from 'react';
 
-import { CumulatedBalances } from '~/components/Expense/CumulatedBalances';
 import { useTranslationWithUtils } from '~/hooks/useTranslationWithUtils';
+import { cn } from '~/lib/utils';
 import { BigMath } from '~/utils/numbers';
 
 interface GroupMyBalanceProps {
@@ -67,12 +67,33 @@ const GroupMyBalance: React.FC<GroupMyBalanceProps> = ({
     [friendBalances],
   );
 
-  return (
-    <div className="flex gap-2">
-      <div className="flex flex-col gap-2">
-        <CumulatedBalances entityId={groupId} entityType="group" balances={cumulatedBalances} />
+  const hasSeveralFriends = 1 < Object.keys(friendBalances).length;
 
-        {Object.entries(friendBalances)
+  return (
+    <div className="flex flex-col gap-1">
+      <p className="text-muted-foreground text-sm">{t('ui.total_balance')}</p>
+      <div className="flex flex-wrap items-baseline gap-2">
+        {cumulatedBalances.length ? (
+          cumulatedBalances.map(({ currency, amount }) => (
+            <span
+              key={currency}
+              className={cn(
+                'text-3xl font-bold',
+                0n < amount ? 'text-positive' : 'text-negative',
+              )}
+            >
+              {0n < amount ? '+' : '\u2212'}
+              {getCurrencyHelpersCached(currency).toUIString(BigMath.abs(amount))}
+            </span>
+          ))
+        ) : (
+          <span className="text-3xl font-bold">{t('ui.settled_up')}</span>
+        )}
+      </div>
+
+      {/* A deux, préciser "tu dois à X" est redondant : il n'y a qu'un X. */}
+      {hasSeveralFriends &&
+        Object.entries(friendBalances)
           .slice(0, 2)
           .map(([friendId, balances]) => {
             const friend = userMap[+friendId];
@@ -89,14 +110,6 @@ const GroupMyBalance: React.FC<GroupMyBalanceProps> = ({
               </div>
             );
           })}
-
-        {2 < Object.keys(friendBalances).length ? (
-          <div className="text-sm text-gray-500">
-            +{Object.keys(friendBalances).length - 2}{' '}
-            {Object.keys(friendBalances).length === 3 ? t('ui.balance') : t('ui.balances')}...
-          </div>
-        ) : null}
-      </div>
     </div>
   );
 };
