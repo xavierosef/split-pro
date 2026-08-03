@@ -13,6 +13,13 @@ describe('parseQuickExpense', () => {
     expect(parseQuickExpense('12,50 € courses')).toEqual({ cents: 1250n, name: 'Courses' });
   });
 
+  it('reads the spoken form Siri produces', () => {
+    expect(parseQuickExpense('12 euros 50 courses')).toEqual({ cents: 1250n, name: 'Courses' });
+    expect(parseQuickExpense('12 euros courses')).toEqual({ cents: 1200n, name: 'Courses' });
+    expect(parseQuickExpense('courses 12 euros 50')).toEqual({ cents: 1250n, name: 'Courses' });
+    expect(parseQuickExpense('3 € 20 café')).toEqual({ cents: 320n, name: 'Café' });
+  });
+
   it('reads the amount behind the description', () => {
     expect(parseQuickExpense('courses auchan 12,50')).toEqual({
       cents: 1250n,

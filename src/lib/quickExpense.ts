@@ -1,35 +1,61 @@
 export const MIN_CENTS = 2n;
 export const MAX_CENTS = 200_000n;
 
-const AMOUNT_SOURCE = String.raw`(\d+(?:[.,]\d{1,2})?)\s*(?:€|eur|euros?)?`;
-const LEADING_AMOUNT = new RegExp(String.raw`^\s*${AMOUNT_SOURCE}`, 'i');
-const ANY_AMOUNT = new RegExp(String.raw`(?<![\d.,])${AMOUNT_SOURCE}(?![\d.,])`, 'gi');
+/* L'ordre compte : « eur » avant « euros » laisserait un « os » dans le libelle. */
+const CURRENCY = String.raw`(?:€|euros?|eur)`;
 
-const toCents = (raw: string): bigint => {
-  const [whole = '0', frac = ''] = raw.replace(',', '.').split('.');
-  return BigInt(whole) * 100n + BigInt(frac.padEnd(2, '0'));
-};
+/*
+ * « 12 euros 50 » : la forme que produit la dictee Siri, ou les centimes
+ * arrivent apres le mot « euros » au lieu d'une virgule.
+ */
+const SPOKEN = String.raw`(\d+)\s*${CURRENCY}\s*(\d{1,2})(?!\d)`;
+
+/* « 12,50 », « 12.5 », « 12 », « 12 € ». */
+const PLAIN = String.raw`(\d+(?:[.,]\d{1,2})?)\s*${CURRENCY}?`;
+
+const patterns = [
+  { re: new RegExp(String.raw`^\s*${SPOKEN}`, 'i'), last: false },
+  { re: new RegExp(String.raw`^\s*${PLAIN}`, 'i'), last: false },
+  { re: new RegExp(String.raw`(?<![\d.,])${SPOKEN}`, 'gi'), last: true },
+  { re: new RegExp(String.raw`(?<![\d.,])${PLAIN}(?![\d.,])`, 'gi'), last: true },
+];
+
+const toCents = (whole: string, frac = ''): bigint =>
+  BigInt(whole) * 100n + BigInt(frac.padEnd(2, '0'));
 
 const capitalize = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
 
 /**
  * Le montant est cherche en tete en priorite : "12,50 pour 2 personnes" doit
- * donner 12,50 et non 2. Sinon on prend le dernier nombre isole, ce qui couvre
- * la dictee ("courses 12,50") et les libelles qui comptent ("2 packs 12,50").
+ * donner 12,50 et non 2. A defaut on prend le dernier nombre isole, ce qui
+ * couvre la dictee ("courses 12 euros 50") et les libelles qui comptent
+ * ("2 packs 12,50"). La forme parlee passe avant la forme ecrite, sinon
+ * "12 euros 50 courses" donnerait 12 € pour "50 courses".
  */
 export const parseQuickExpense = (input: string): { cents: bigint; name: string } | null => {
-  const leading = LEADING_AMOUNT.exec(input);
-  const match = leading ?? [...input.matchAll(ANY_AMOUNT)].at(-1);
-  if (!match?.[1]) {
-    return null;
+  const attempt = ({ re, last }: (typeof patterns)[number]) => {
+    const match = last ? [...input.matchAll(re)].at(-1) : re.exec(input);
+    if (!match?.[1]) {
+      return null;
+    }
+
+    /* Forme ecrite : les centimes sont dans le groupe 1. Parlee : dans le 2. */
+    const [whole = '0', frac] = /[.,]/.test(match[1])
+      ? match[1].replace(',', '.').split('.')
+      : [match[1], match[2]];
+
+    const name = input.replace(match[0], ' ').replace(/\s+/g, ' ').trim();
+    return name ? { cents: toCents(whole, frac), name: capitalize(name) } : null;
+  };
+
+  for (const pattern of patterns) {
+    const parsed = attempt(pattern);
+    if (parsed) {
+      return parsed;
+    }
   }
 
-  const name = input.replace(match[0], ' ').replace(/\s+/g, ' ').trim();
-  if (!name) {
-    return null;
-  }
-
-  return { cents: toCents(match[1]), name: capitalize(name) };
+  return null;
 };
 
 /**
