@@ -21,8 +21,7 @@ import { BigMath } from '~/utils/numbers';
 import { CurrencyConversion } from '../Friend/CurrencyConversion';
 import { EntityAvatar } from '../ui/avatar';
 import { Button } from '../ui/button';
-import { categoryColor } from '~/lib/categoryColors';
-import { CategoryIcon } from '../ui/categoryIcons';
+import { CategoryTile } from './CategoryTile';
 import { CurrencyInput } from '../ui/currency-input';
 import { AppDrawer } from '../ui/drawer';
 import { Separator } from '../ui/separator';
@@ -62,16 +61,7 @@ const ExpenseDetails: React.FC<ExpenseDetailsProps> = ({ user, expense }) => {
     <>
       <div className="mb-4 flex items-start justify-between gap-2">
         <div className="flex items-start gap-4">
-          <div
-            className="category-tile flex size-12 items-center justify-center rounded-2xl"
-            style={{ '--category-color': categoryColor(expense.category) } as React.CSSProperties}
-          >
-            <CategoryIcon
-              category={expense.category}
-              size={24}
-              style={{ color: categoryColor(expense.category) }}
-            />
-          </div>
+          <CategoryTile category={expense.category} className="size-12 rounded-2xl" iconSize={24} />
           <div className="flex flex-col gap-2">
             <div className="flex w-full items-center gap-2">
               <p>{expense.name}</p>

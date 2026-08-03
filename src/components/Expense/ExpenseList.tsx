@@ -6,9 +6,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import React from 'react';
 import { toast } from 'sonner';
-import { CategoryIcon, CurrencyConversionIcon, SettleupIcon } from '~/components/ui/categoryIcons';
+import { CurrencyConversionIcon, SettleupIcon } from '~/components/ui/categoryIcons';
+import { CategoryTile } from '~/components/Expense/CategoryTile';
 import { useTranslationWithUtils } from '~/hooks/useTranslationWithUtils';
-import { categoryColor } from '~/lib/categoryColors';
 import { cn } from '~/lib/utils';
 import type { ExpenseRouter } from '~/server/api/routers/expense';
 import { api } from '~/utils/api';
@@ -121,12 +121,7 @@ const Expense: ExpenseComponent = ({ e, userId }) => {
         <div className="text-muted-foreground inline-block w-6 shrink-0 text-center text-[0.7rem]">
           {toUIDate(e.expenseDate)}
         </div>
-        <span
-          className="category-tile flex size-8 shrink-0 items-center justify-center rounded-[0.6rem]"
-          style={{ '--category-color': categoryColor(e.category) } as React.CSSProperties}
-        >
-          <CategoryIcon category={e.category} className="size-4" style={{ color: categoryColor(e.category) }} />
-        </span>
+        <CategoryTile category={e.category} className="size-8 shrink-0 rounded-[0.6rem]" />
         <div className="min-w-0 pe-1">
           <p className="truncate text-sm leading-tight">{e.name}</p>
           <p className="text-muted-foreground truncate text-[0.7rem] leading-tight">

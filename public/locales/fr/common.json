@@ -6,6 +6,18 @@
       "description": "Description",
       "none": "Rien"
     },
+    "categories": {
+      "title": "Catégories",
+      "create": "Nouvelle catégorie",
+      "edit": "Modifier la catégorie",
+      "name_placeholder": "Nom de la catégorie",
+      "colour": "Couleur",
+      "icon": "Icône",
+      "empty": "Aucune catégorie personnalisée. Celles d'origine restent disponibles.",
+      "delete_title": "Supprimer cette catégorie ?",
+      "delete_unused": "Aucune dépense ne l'utilise. La supprimer ne change rien d'autre.",
+      "delete_used": "{{count}} dépense(s) l'utilisent. Elles gardent leur libellé mais reprennent la couleur et l'icône par défaut."
+    },
     "change_language": "Changer de langue",
     "change_language_details": {
       "messages": {

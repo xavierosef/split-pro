@@ -1,4 +1,4 @@
-import { CreditCard, FileDown, Languages, LogOut } from 'lucide-react';
+import { CreditCard, FileDown, Languages, LogOut, Tags } from 'lucide-react';
 import type { GetServerSideProps } from 'next';
 import { signOut } from 'next-auth/react';
 import { useTranslation } from 'next-i18next';
@@ -10,12 +10,14 @@ import { AccountButton } from '~/components/Account/AccountButton';
 import { LanguagePicker } from '~/components/Account/LanguagePicker';
 import { SubmitFeedback } from '~/components/Account/SubmitFeedback';
 import { AutoFocusPicker } from '~/components/Account/AutoFocusPicker';
+import { CategoryEditor } from '~/components/Account/CategoryEditor';
 import { GroupBalancesDrawer } from '~/components/Account/GroupBalancesDrawer';
 import { TextSizePicker } from '~/components/Account/TextSizePicker';
 import { TotalBalanceCard } from '~/components/Account/TotalBalanceCard';
 import { SubscribeNotification } from '~/components/Account/SubscribeNotification';
 import { UpdateName } from '~/components/Account/UpdateDetails';
 import MainLayout from '~/components/Layout/MainLayout';
+import { AppDrawer } from '~/components/ui/drawer';
 import { SimpleConfirmationDialog } from '~/components/SimpleConfirmationDialog';
 import { EntityAvatar } from '~/components/ui/avatar';
 import { Button } from '~/components/ui/button';
@@ -113,6 +115,19 @@ const AccountPage: NextPageWithUser<{
         </div>
         <div className="mt-8 flex flex-col gap-4">
           <GroupBalancesDrawer />
+
+          <AppDrawer
+            title={t('account.categories.title')}
+            className="h-[80vh]"
+            trigger={
+              <AccountButton>
+                <Tags className="size-5 text-fuchsia-400" />
+                {t('account.categories.title')}
+              </AccountButton>
+            }
+          >
+            <CategoryEditor />
+          </AppDrawer>
 
           <AutoFocusPicker />
 

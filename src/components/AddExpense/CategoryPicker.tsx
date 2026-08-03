@@ -3,7 +3,8 @@ import { useMemo } from 'react';
 import { useTranslation } from 'next-i18next';
 
 import { Button } from '../ui/button';
-import { CategoryIcon } from '../ui/categoryIcons';
+import { CategoryTile } from '~/components/Expense/CategoryTile';
+import { useCategoryResolver } from '~/hooks/useCategoryResolver';
 import { AppDrawer, AppDrawerClose, DrawerClose } from '../ui/drawer';
 
 export const CategoryPicker: React.FC<{
@@ -12,10 +13,12 @@ export const CategoryPicker: React.FC<{
 }> = ({ category, onCategoryPick }) => {
   const { t } = useTranslation('categories');
 
+  const { custom } = useCategoryResolver();
+
   const trigger = useMemo(
     () => (
       <div className="flex w-[73px] cursor-pointer justify-center rounded-lg border py-2">
-        <CategoryIcon category={category} size={20} />
+        <CategoryTile category={category} className="size-8 rounded-lg" iconSize={18} />
       </div>
     ),
     [category],
@@ -23,6 +26,25 @@ export const CategoryPicker: React.FC<{
 
   return (
     <AppDrawer trigger={trigger} title={t('title')} className="h-[70vh]" shouldCloseOnAction>
+      {0 < custom.length && (
+        <div className="mb-8">
+          <h3 className="mb-4 text-lg font-semibold">{t('custom_section', 'Mes catégories')}</h3>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(75px,1fr))] gap-4">
+            {custom.map((c) => (
+              <AppDrawerClose key={c.id} asChild>
+                <Button
+                  variant="ghost"
+                  className="flex h-[75px] w-[75px] flex-col items-center justify-start gap-1 justify-self-center py-3 text-center"
+                  onClick={() => onCategoryPick(c.id)}
+                >
+                  <CategoryTile category={c.id} className="size-8 rounded-lg" iconSize={18} />
+                  <span className="block text-xs text-wrap">{c.name}</span>
+                </Button>
+              </AppDrawerClose>
+            ))}
+          </div>
+        </div>
+      )}
       {Object.entries(CATEGORIES).map(([categoryName, categoryItems]) => (
         <div key={categoryName} className="mb-8">
           <h3 className="mb-4 text-lg font-semibold">
@@ -44,11 +66,11 @@ export const CategoryPicker: React.FC<{
                     className="flex h-[75px] w-[75px] flex-col items-center justify-start gap-1 justify-self-center py-3 text-center"
                     onClick={handleClick}
                   >
-                    <span className="block flex-shrink-0 text-2xl">
-                      <CategoryIcon
-                        category={(key === 'other' ? categoryName : key) as CategoryItem}
-                      />
-                    </span>
+                    <CategoryTile
+                      category={'other' === key ? categoryName : key}
+                      className="size-8 rounded-lg"
+                      iconSize={18}
+                    />
                     <span className="block text-xs text-wrap">
                       {t(`categories_list.${categoryName}.items.${key}`, { ns: 'categories' })}
                     </span>

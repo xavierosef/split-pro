@@ -6,6 +6,18 @@
       "description": "Description",
       "none": "Nothing"
     },
+    "categories": {
+      "title": "Categories",
+      "create": "New category",
+      "edit": "Edit category",
+      "name_placeholder": "Category name",
+      "colour": "Colour",
+      "icon": "Icon",
+      "empty": "No custom category yet. The built-in ones stay available.",
+      "delete_title": "Delete this category?",
+      "delete_unused": "No expense uses it. Deleting it changes nothing else.",
+      "delete_used": "{{count}} expense(s) use it. They keep their label but fall back to the default colour and icon."
+    },
     "change_language": "Change language",
     "change_language_details": {
       "messages": {

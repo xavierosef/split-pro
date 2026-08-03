@@ -1,0 +1,73 @@
+import {
+  Baby,
+  Beer,
+  Bike,
+  Bone,
+  Book,
+  Briefcase,
+  Cake,
+  Camera,
+  Car,
+  Cigarette,
+  Coffee,
+  Croissant,
+  Dumbbell,
+  Flower2,
+  Gamepad2,
+  Gift,
+  Hammer,
+  Heart,
+  Home,
+  IceCream,
+  Laptop,
+  Leaf,
+  type LucideIcon,
+  Music,
+  PawPrint,
+  PiggyBank,
+  Pizza,
+  Plane,
+  Receipt,
+  Scissors,
+  ShoppingBag,
+  ShoppingCart,
+  Shirt,
+  Smartphone,
+  Sparkles,
+  Stethoscope,
+  Sun,
+  Ticket,
+  Train,
+  Trees,
+  Tv,
+  Umbrella,
+  Utensils,
+  Wine,
+  Wrench,
+} from 'lucide-react';
+
+// Bibliotheque volontairement bornee : assez large pour couvrir les depenses
+// d'un foyer, assez courte pour se choisir d'un coup d'oeil dans une grille.
+export const CUSTOM_ICONS: Record<string, LucideIcon> = {
+  Utensils, Pizza, Coffee, Croissant, IceCream, Cake, Wine, Beer,
+  ShoppingCart, ShoppingBag, Gift, Shirt, Scissors, Sparkles,
+  Home, Hammer, Wrench, Tv, Laptop, Smartphone, Receipt, PiggyBank, Briefcase,
+  Car, Train, Plane, Bike, Ticket,
+  Heart, Stethoscope, Baby, PawPrint, Bone,
+  Gamepad2, Music, Camera, Book, Dumbbell,
+  Sun, Umbrella, Leaf, Trees, Flower2, Cigarette,
+};
+
+export const CUSTOM_COLORS = [
+  'oklch(0.72 0.17 55)',
+  'oklch(0.7 0.17 15)',
+  'oklch(0.68 0.19 320)',
+  'oklch(0.72 0.15 240)',
+  'oklch(0.75 0.15 195)',
+  'oklch(0.68 0.15 155)',
+  'oklch(0.78 0.16 95)',
+  'oklch(0.65 0.03 260)',
+];
+
+export const customIcon = (name?: string): LucideIcon | undefined =>
+  name ? CUSTOM_ICONS[name] : undefined;
