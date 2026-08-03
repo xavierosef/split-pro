@@ -5,33 +5,33 @@
       <stop offset="0.5" stop-color="#3a6ce8"/>
       <stop offset="1" stop-color="#8d3fe4"/>
     </linearGradient>
-    <linearGradient id="sheen" x1="0" y1="0" x2="0.55" y2="1">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.34"/>
-      <stop offset="0.5" stop-color="#ffffff" stop-opacity="0.03"/>
+    <linearGradient id="sheen" x1="0" y1="0" x2="0.5" y2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.3"/>
+      <stop offset="0.55" stop-color="#ffffff" stop-opacity="0.02"/>
       <stop offset="1" stop-color="#ffffff" stop-opacity="0"/>
     </linearGradient>
-    <linearGradient id="liquid" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#ffffff" stop-opacity="0.98"/>
-      <stop offset="1" stop-color="#ffffff" stop-opacity="0.82"/>
-    </linearGradient>
-    <clipPath id="disc">
-      <circle cx="256" cy="262" r="138"/>
+    <clipPath id="card">
+      <rect width="512" height="512" rx="114"/>
     </clipPath>
   </defs>
 
-  <rect width="512" height="512" rx="114" fill="url(#bg)"/>
-  <rect width="512" height="512" rx="114" fill="url(#sheen)"/>
+  <g clip-path="url(#card)">
+    <rect width="512" height="512" fill="url(#bg)"/>
 
-  <g clip-path="url(#disc)">
-    <path
-      d="M118,286 C150,252 182,320 214,290 C246,260 278,326 310,296 C340,268 372,300 394,282 L394,400 L118,400 Z"
-      fill="url(#liquid)"/>
-    <path
-      d="M118,316 C152,290 184,344 216,318 C248,292 280,346 312,320 C342,296 374,324 394,312 L394,400 L118,400 Z"
-      fill="#ffffff" fill-opacity="0.45"/>
+    <!-- Les facettes en diagonale de l'icone Splitwise, rejouees en clair/sombre
+         sur notre degrade plutot qu'en vert et anthracite. -->
+    <path d="M0,0 L512,0 L0,512 Z" fill="#ffffff" fill-opacity="0.16"/>
+    <path d="M512,0 L512,512 L0,512 Z" fill="#0b1220" fill-opacity="0.3"/>
+    <path d="M256,0 L512,256 L256,512 L0,256 Z" fill="#ffffff" fill-opacity="0.04"/>
+
+    <rect width="512" height="512" fill="url(#sheen)"/>
   </g>
 
-  <circle cx="256" cy="262" r="138" fill="none" stroke="#ffffff" stroke-opacity="0.92" stroke-width="16"/>
-  <path d="M158 200 A138 138 0 0 1 244 126" fill="none" stroke="#ffffff" stroke-opacity="0.75"
-        stroke-width="14" stroke-linecap="round"/>
+  <!-- La maison ouverte de Splitwise : meme silhouette, meme proportions. -->
+  <path d="M120,214 L256,104 L392,214 L392,404 L120,404 Z"
+        fill="none" stroke="#ffffff" stroke-width="26"
+        stroke-linejoin="round" stroke-linecap="round"/>
+
+  <text x="256" y="345" font-family="Helvetica Neue, Helvetica, Arial, sans-serif"
+        font-size="205" font-weight="700" fill="#ffffff" text-anchor="middle">S</text>
 </svg>

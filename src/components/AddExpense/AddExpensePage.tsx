@@ -1,4 +1,4 @@
-import { Landmark, RefreshCcwDot, X } from 'lucide-react';
+import { ChevronRight, Landmark, X } from 'lucide-react';
 import { useRouter } from 'next/router';
 import React, { useCallback } from 'react';
 
@@ -26,6 +26,26 @@ import { CurrencyConversion } from '../Friend/CurrencyConversion';
 import { currencyConversion } from '~/utils/numbers';
 import { CurrencyConversionIcon } from '../ui/categoryIcons';
 import { useSession } from 'next-auth/react';
+
+const OptionRow: React.FC<{ label: string; children: React.ReactNode }> = ({
+  label,
+  children,
+}) => (
+  <div className="flex min-h-13 items-center justify-between gap-3 px-4 py-1.5">
+    <span className="text-muted-foreground shrink-0 text-sm">{label}</span>
+    <div className="flex min-w-0 items-center justify-end">{children}</div>
+  </div>
+);
+
+const OptionValue: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+  <Button
+    variant="ghost"
+    className="text-primary h-8 max-w-full min-w-0 justify-end gap-1 px-1 text-right text-base"
+  >
+    <span className="truncate">{children}</span>
+    <ChevronRight className="text-muted-foreground size-4 shrink-0" />
+  </Button>
+);
 
 export const AddOrEditExpensePage: React.FC<{
   enableSendingInvites: boolean;
@@ -289,16 +309,7 @@ export const AddOrEditExpensePage: React.FC<{
         <div className="text-center">
           {expenseId ? t('actions.edit_expense') : t('actions.add_expense')}
         </div>
-        <Button
-          variant="ghost"
-          className="text-primary px-0"
-          disabled={
-            addExpenseMutation.isPending || !amount || '' === description || isFileUploading
-          }
-          onClick={addExpense}
-        >
-          {t('actions.save')}
-        </Button>{' '}
+        <div className="w-16" />
       </div>
       {!group && <UserInput isEditing={Boolean(expenseId)} />}
       {showFriends || (1 === participants.length && !group) ? (
@@ -327,24 +338,18 @@ export const AddOrEditExpensePage: React.FC<{
               rightIcon={currencyConversionComponent}
             />
           </div>
-          <div className="h-[180px]">
-            {amount && '' !== description ? (
-              <>
-                <div className="flex flex-col items-center justify-center text-sm text-gray-400 sm:mt-4 sm:flex-row">
-                  <p>{t(`ui.expense.${isNegative ? 'received_by' : 'paid_by'}`)}</p>
+          {amount && '' !== description ? (
+            <>
+              <div className="bg-muted/40 mt-5 divide-y divide-white/5 rounded-2xl">
+                <OptionRow label={t(`ui.expense.${isNegative ? 'received_by' : 'paid_by'}`)}>
                   <PayerSelectionForm>
-                    <Button
-                      variant="ghost"
-                      className="text-primary h-8 max-w-full min-w-0 justify-start px-1.5 py-0 text-base sm:max-w-none"
-                    >
-                      <span className="max-w-full truncate">
-                        {displayName(paidBy, currentUser?.id, 'dativus')}
-                      </span>
-                    </Button>
+                    <OptionValue>{displayName(paidBy, currentUser?.id, 'dativus')}</OptionValue>
                   </PayerSelectionForm>
-                  <p>{t('ui.and')} </p>
+                </OptionRow>
+
+                <OptionRow label={t('expense_details.add_expense_details.split_label')}>
                   <SplitExpenseForm>
-                    <Button variant="ghost" className="text-primary h-8 px-1.5 py-0 text-base">
+                    <OptionValue>
                       {generateSplitDescription(
                         splitType,
                         participants,
@@ -352,75 +357,80 @@ export const AddOrEditExpensePage: React.FC<{
                         paidBy,
                         currentUser,
                       )}
-                    </Button>
+                    </OptionValue>
                   </SplitExpenseForm>
-                </div>
+                </OptionRow>
 
-                <div className="mt-4 flex items-start justify-between sm:mt-10">
+                <OptionRow label={t('expense_details.add_expense_details.date_label')}>
                   <DateSelector
                     mode="single"
                     required
                     selected={expenseDate}
                     onSelect={setExpenseDate}
                   />
-                  <div className="flex items-center gap-4">
-                    <UploadFile />
-                    <Button
-                      className="min-w-[100px]"
-                      size="sm"
-                      loading={addExpenseMutation.isPending || isFileUploading}
-                      disabled={
-                        addExpenseMutation.isPending ||
-                        !amount ||
-                        '' === description ||
-                        isFileUploading ||
-                        !isExpenseSettled
-                      }
-                      onClick={addExpense}
-                    >
-                      {t('actions.save')}
-                    </Button>
-                  </div>
-                </div>
-              </>
-            ) : null}
-          </div>
-          <div className="flex items-center justify-evenly px-4 lg:px-0">
-            {!expenseId && (
-              <RecurrenceInput>
-                <Button variant="ghost" size="sm">
-                  <RefreshCcwDot
-                    className={cn(
-                      cronExpression && 'text-primary',
-                      (!amtStr || !description) && 'invisible',
-                      'size-6',
-                    )}
-                  />
-                  <span className="sr-only">Toggle recurring expense options</span>
-                </Button>
-              </RecurrenceInput>
-            )}
-            <div className="flex gap-2">
-              <AddBankTransactions bankConnectionEnabled={bankConnectionEnabled}>
+                </OptionRow>
+
+                {!expenseId && (
+                  <OptionRow label={t('expense_details.add_expense_details.recurrence_label')}>
+                    <RecurrenceInput>
+                      <OptionValue>
+                        {cronExpression
+                          ? t('expense_details.add_expense_details.recurrence_on')
+                          : t('expense_details.add_expense_details.recurrence_off')}
+                      </OptionValue>
+                    </RecurrenceInput>
+                  </OptionRow>
+                )}
+
+                <OptionRow label={t('expense_details.add_expense_details.receipt_label')}>
+                  <UploadFile />
+                </OptionRow>
+
+                {bankConnectionEnabled && (
+                  <OptionRow label={t('bank_transactions.to_bank')}>
+                    <div className="flex items-center gap-2">
+                      <AddBankTransactions bankConnectionEnabled={bankConnectionEnabled}>
+                        <Button variant="ghost" className="px-2">
+                          <Landmark
+                            className={cn(
+                              transactionId ? 'text-primary' : 'text-muted-foreground',
+                              'size-5',
+                            )}
+                          />
+                        </Button>
+                      </AddBankTransactions>
+                      {transactionId && (
+                        <Button
+                          variant="ghost"
+                          className="px-2 text-red-500"
+                          onClick={clearTransaction}
+                        >
+                          <X className="size-5" />
+                        </Button>
+                      )}
+                    </div>
+                  </OptionRow>
+                )}
+              </div>
+
+              <div className="fixed inset-x-4 bottom-[calc(env(safe-area-inset-bottom)+6.5rem)] z-40 lg:static lg:mt-8">
                 <Button
-                  variant="ghost"
-                  className="hover:text-foreground/80 items-center justify-between px-2"
+                  className="liquid-glass liquid-glass--accent h-14 w-full rounded-full text-base font-semibold text-white"
+                  loading={addExpenseMutation.isPending || isFileUploading}
+                  disabled={
+                    addExpenseMutation.isPending ||
+                    !amount ||
+                    '' === description ||
+                    isFileUploading ||
+                    !isExpenseSettled
+                  }
+                  onClick={addExpense}
                 >
-                  <Landmark
-                    className={cn(transactionId ? 'text-primary' : 'text-muted-foreground', 'h-6 w-6')}
-                  />
+                  {t('actions.save')}
                 </Button>
-              </AddBankTransactions>
-              <Button
-                variant="ghost"
-                className={cn('px-2', transactionId ? 'text-red-500' : 'invisible')}
-                disabled={!transactionId}
-                onClick={clearTransaction}
-              >
-                <X className="h-6 w-6" />
-              </Button>
-            </div>
-          </div>
+              </div>
+            </>
+          ) : null}
         </>
       )}
     </div>

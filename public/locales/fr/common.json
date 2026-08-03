@@ -195,8 +195,13 @@
     "add_expense_details": {
       "add_new_expense": "Ajouter une dépense",
       "amount_placeholder": "Montant",
+      "date_label": "Date",
       "description_placeholder": "Description de la dépense",
       "pick_a_date": "Choisir une date",
+      "receipt_label": "Reçu",
+      "recurrence_label": "Répétition",
+      "recurrence_off": "Jamais",
+      "recurrence_on": "Activée",
       "select_user_or_group": {
         "add_to_split_pro": "Inviter sur SplitPro",
         "note": "Note : l'envoi de mails d'invitation est désactivé pour le moment pour éviter le spam",
@@ -204,6 +209,7 @@
         "send_invite": "Envoyer une invitation",
         "warning": "Attention : N'envoyez pas d'invitation à des adresses mail non enregistrées ici, utilisez plutôt la fonction « inviter sur SplitPro ». Votre compte sera bloqué si vous utilisez mal cette fonctionnalité"
       },
+      "split_label": "Partage",
       "split_type_section": {
         "split_equally": "partagé à parts égales",
         "split_unequally": "partagé inégalement",
