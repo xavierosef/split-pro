@@ -52,7 +52,7 @@ const collectExpenseChanges = async (
       return payer?.name ?? payer?.email ?? String(id);
     };
     changes.push({
-      label: 'paid by',
+      label: 'payé par',
       from: payerName(before.paidBy),
       to: payerName(after.paidBy),
     });
@@ -199,7 +199,11 @@ export async function sendExpensePushNotification(
         ({ userId, amount }) => userId !== expense.addedBy && 0n !== amount,
       );
 
-  // A way to localize it and reuse our utils would be ideal
+  /*
+   * Les messages sont en francais en dur : l'instance ne sert que deux comptes
+   * francophones, et localiser proprement demanderait de connaitre la langue du
+   * destinataire cote serveur, la ou next-i18next ne vit que cote client.
+   */
   const getUserDisplayName = (user: { name: string | null; email: string | null } | null) =>
     user?.name ?? user?.email ?? '';
 
@@ -221,7 +225,7 @@ export async function sendExpensePushNotification(
     if (expense.deletedBy) {
       return {
         title: getUserDisplayName(expense.deletedByUser),
-        message: `Deleted ${expense.name}`,
+        message: `a supprimé ${expense.name}`,
       };
     }
 
@@ -230,8 +234,8 @@ export async function sendExpensePushNotification(
       return {
         title: getUserDisplayName(expense.updatedByUser),
         message: changes.length
-          ? `Updated ${expense.name}: ${describeExpenseChanges(changes)}`
-          : `Updated ${expense.name} ${amount}`,
+          ? `a modifié ${expense.name} : ${describeExpenseChanges(changes)}`
+          : `a modifié ${expense.name} · ${amount}`,
       };
     }
 
@@ -240,7 +244,7 @@ export async function sendExpensePushNotification(
       const toAmount = formatAmount(expense.conversionTo.currency, expense.conversionTo.amount);
       return {
         title: adder,
-        message: `${payer} converted ${amount} → ${toAmount}`,
+        message: `${payer} a converti ${amount} → ${toAmount}`,
       };
     }
 
@@ -248,14 +252,18 @@ export async function sendExpensePushNotification(
     if (expense.splitType === SplitType.SETTLEMENT) {
       return {
         title: adder,
-        message: `${payer} settled up ${amount}`,
+        message: `${payer} a remboursé ${amount}`,
       };
     }
 
     // Regular expense
     return {
       title: adder,
-      message: `${payer} paid ${amount} for ${expense.name}`,
+      // Le titre porte deja le nom : ne le repeter que si le payeur differe.
+      message:
+        payer === adder
+          ? `a payé ${amount} pour ${expense.name}`
+          : `${payer} a payé ${amount} pour ${expense.name}`,
     };
   };
 
@@ -327,11 +335,11 @@ export async function sendGroupSimplifyDebtsToggleNotification(
       user?.name ?? user?.email ?? '';
 
     const togglerName = getUserDisplayName(togglerUser);
-    const stateText = newState ? 'on' : 'off';
+    const stateText = newState ? 'activé' : 'désactivé';
 
     const pushData = {
       title: togglerName,
-      message: `turned ${stateText} debt simplification for ${group.name}`,
+      message: `a ${stateText} la simplification des dettes pour ${group.name}`,
       data: {
         url: `/groups/${groupId}`,
       },
