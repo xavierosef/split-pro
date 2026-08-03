@@ -2,6 +2,7 @@ import { ChevronRight, Landmark, X } from 'lucide-react';
 import { useRouter } from 'next/router';
 import React, { useCallback } from 'react';
 
+import { getAutoFocusTarget } from '~/lib/autoFocusPreference';
 import { type CurrencyCode } from '~/lib/currency';
 import { useAddExpenseStore } from '~/store/addStore';
 import { api } from '~/utils/api';
@@ -37,15 +38,25 @@ const OptionRow: React.FC<{ label: string; children: React.ReactNode }> = ({
   </div>
 );
 
-const OptionValue: React.FC<{ children: React.ReactNode }> = ({ children }) => (
-  <Button
-    variant="ghost"
-    className="text-primary h-8 max-w-full min-w-0 justify-end gap-1 px-1 text-right text-base"
-  >
-    <span className="truncate">{children}</span>
-    <ChevronRight className="text-muted-foreground size-4 shrink-0" />
-  </Button>
+// Le declencheur d'un AppDrawer est clone par Radix Slot : il faut relayer la
+// ref et les props (dont onClick), sinon la ligne devient inerte.
+const OptionValue = React.forwardRef<HTMLButtonElement, React.ComponentProps<typeof Button>>(
+  ({ children, className, ...props }, ref) => (
+    <Button
+      ref={ref}
+      variant="ghost"
+      className={cn(
+        'text-primary h-9 max-w-full min-w-0 justify-end gap-1 px-1 text-right text-base',
+        className,
+      )}
+      {...props}
+    >
+      <span className="truncate">{children}</span>
+      <ChevronRight className="text-muted-foreground size-4 shrink-0" />
+    </Button>
+  ),
 );
+OptionValue.displayName = 'OptionValue';
 
 export const AddOrEditExpensePage: React.FC<{
   enableSendingInvites: boolean;
@@ -296,6 +307,23 @@ export const AddOrEditExpensePage: React.FC<{
     );
   }, [amount, currency, onConvertAmount]);
 
+  const descriptionRef = React.useRef<HTMLInputElement>(null);
+  const amountRef = React.useRef<HTMLInputElement>(null);
+
+  // Le clavier doit sortir sur le champ que l'utilisateur remplit en premier :
+  // le montant par defaut, la description si c'est son habitude.
+  React.useEffect(() => {
+    const target = getAutoFocusTarget();
+    if ('none' === target) {
+      return;
+    }
+    const timer = setTimeout(() => {
+      const el = 'amount' === target ? amountRef.current : descriptionRef.current;
+      el?.focus();
+    }, 220);
+    return () => clearTimeout(timer);
+  }, []);
+
   const onBackButtonPress = useCallback(() => {
     router.back();
   }, [router]);
@@ -319,16 +347,22 @@ export const AddOrEditExpensePage: React.FC<{
           <div className="mt-4 flex gap-2 sm:mt-10">
             <CategoryPicker category={category} onCategoryPick={setCategory} />
             <Input
+              ref={descriptionRef}
               placeholder={t('expense_details.add_expense_details.description_placeholder')}
               value={description}
               onChange={handleDescriptionChange}
               className="text-lg placeholder:text-sm"
-              autoFocus
+              onKeyDown={(e) => {
+                if ('Enter' === e.key) {
+                  amountRef.current?.focus();
+                }
+              }}
             />
           </div>
           <div className="flex gap-2">
             <CurrencyPicker currentCurrency={currency} onCurrencyPick={onCurrencyPick} />
             <CurrencyInput
+              ref={amountRef}
               placeholder={t('expense_details.add_expense_details.amount_placeholder')}
               currency={currency}
               strValue={amtStr}

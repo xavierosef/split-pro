@@ -10,6 +10,7 @@ import { AccountButton } from '~/components/Account/AccountButton';
 import { DownloadAppDrawer } from '~/components/Account/DownloadAppDrawer';
 import { LanguagePicker } from '~/components/Account/LanguagePicker';
 import { SubmitFeedback } from '~/components/Account/SubmitFeedback';
+import { AutoFocusPicker } from '~/components/Account/AutoFocusPicker';
 import { GroupBalancesDrawer } from '~/components/Account/GroupBalancesDrawer';
 import { TextSizePicker } from '~/components/Account/TextSizePicker';
 import { TotalBalanceCard } from '~/components/Account/TotalBalanceCard';
@@ -112,6 +113,8 @@ const AccountPage: NextPageWithUser<{
         </div>
         <div className="mt-8 flex flex-col gap-4">
           <GroupBalancesDrawer />
+
+          <AutoFocusPicker />
 
           <TextSizePicker />
 

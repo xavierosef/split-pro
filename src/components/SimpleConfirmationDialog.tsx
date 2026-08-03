@@ -12,6 +12,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from './ui/alert-dialog';
+import { cn } from '~/lib/utils';
 import { Button, type buttonVariants } from './ui/button';
 
 export const SimpleConfirmationDialog: React.FC<
@@ -52,10 +53,10 @@ export const SimpleConfirmationDialog: React.FC<
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel onClick={onCancel}>{t('actions.cancel')}</AlertDialogCancel>
+        <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
           {hasPermission && (
             <form
+              className="w-full"
               onSubmit={async (e) => {
                 e.preventDefault();
                 await onConfirm();
@@ -64,15 +65,21 @@ export const SimpleConfirmationDialog: React.FC<
             >
               <Button
                 type="submit"
-                size="sm"
                 variant={variant}
                 disabled={loading}
                 loading={loading}
+                className={cn(
+                  'liquid-glass h-14 w-full rounded-full text-base font-semibold',
+                  'destructive' === variant && 'liquid-glass--danger text-white',
+                )}
               >
                 {t('actions.confirm')}
               </Button>
             </form>
           )}
+          <AlertDialogCancel className="mt-0 h-12 w-full rounded-full" onClick={onCancel}>
+            {t('actions.cancel')}
+          </AlertDialogCancel>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

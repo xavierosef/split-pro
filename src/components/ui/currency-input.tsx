@@ -3,7 +3,8 @@ import { Input, InputProps } from './input';
 import { cn } from '~/lib/utils';
 import { useTranslationWithUtils } from '~/hooks/useTranslationWithUtils';
 
-const CurrencyInput: React.FC<
+const CurrencyInput = React.forwardRef<
+  HTMLInputElement,
   Omit<InputProps, 'type' | 'inputMode'> & {
     currency: string;
     strValue: string;
@@ -11,13 +12,14 @@ const CurrencyInput: React.FC<
     allowNegative?: boolean;
     hideSymbol?: boolean;
   }
-> = ({ className, currency, allowNegative, strValue, onValueChange, hideSymbol, ...props }) => {
+>(({ className, currency, allowNegative, strValue, onValueChange, hideSymbol, ...props }, ref) => {
   const { getCurrencyHelpersCached } = useTranslationWithUtils(undefined);
   const { format, parseToCleanString, toSafeBigInt, sanitizeInput } =
     getCurrencyHelpersCached(currency);
 
   return (
     <Input
+      ref={ref}
       className={cn('text-lg placeholder:text-sm', className)}
       inputMode="decimal"
       value={strValue}
@@ -35,7 +37,7 @@ const CurrencyInput: React.FC<
       {...props}
     />
   );
-};
+});
 
 CurrencyInput.displayName = 'CurrencyInput';
 

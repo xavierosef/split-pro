@@ -1,5 +1,11 @@
 {
   "account": {
+    "autofocus": "Clavier ouvert sur",
+    "autofocus_targets": {
+      "amount": "Montant",
+      "description": "Description",
+      "none": "Rien"
+    },
     "change_language": "Changer de langue",
     "change_language_details": {
       "messages": {
