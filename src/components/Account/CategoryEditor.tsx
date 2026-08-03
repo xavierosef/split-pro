@@ -8,6 +8,7 @@ import { SimpleConfirmationDialog } from '~/components/SimpleConfirmationDialog'
 import { Button } from '~/components/ui/button';
 import { AppDrawer } from '~/components/ui/drawer';
 import { Input } from '~/components/ui/input';
+import { BUILTIN_COLORS, BUILTIN_ICON_NAMES } from '~/lib/categoryUsage';
 import { CUSTOM_COLORS, CUSTOM_ICONS } from '~/lib/customCategoryIcons';
 import { type CustomCategory } from '~/lib/customCategories';
 import { cn } from '~/lib/utils';
@@ -25,9 +26,16 @@ const CategoryForm: React.FC<{
   const upsert = api.categories.upsert.useMutation();
 
   // Marquer ce qui est deja pris evite de creer deux categories jumelles
-  // qu'on ne distinguera plus d'un coup d'oeil dans la liste.
-  const usedIcons = new Set(others.filter((c) => c.id !== initial?.id).map((c) => c.icon));
-  const usedColors = new Set(others.filter((c) => c.id !== initial?.id).map((c) => c.color));
+  // qu'on ne distinguera plus d'un coup d'oeil dans la liste. On compte les
+  // categories d'origine autant que les personnalisees.
+  const usedIcons = new Set([
+    ...BUILTIN_ICON_NAMES,
+    ...others.filter((c) => c.id !== initial?.id).map((c) => c.icon),
+  ]);
+  const usedColors = new Set([
+    ...BUILTIN_COLORS,
+    ...others.filter((c) => c.id !== initial?.id).map((c) => c.color),
+  ]);
 
   const [name, setName] = useState(initial?.name ?? '');
   const [icon, setIcon] = useState(initial?.icon ?? ICON_NAMES[0]!);
