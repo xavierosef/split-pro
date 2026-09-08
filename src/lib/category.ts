@@ -26,3 +26,17 @@ type CategoryValues = (typeof CATEGORIES)[CategorySection][number];
 type CategoryWithoutOther = Exclude<CategoryValues, 'other'>;
 
 export type CategoryItem = CategoryWithoutOther | CategorySection;
+
+/**
+ * Every value an `Expense.category` may hold: the section names (used for the `other`
+ * item of each section, see `CategoryPicker`) plus the named items of every section.
+ */
+export const CATEGORY_ITEMS: CategoryItem[] = [
+  ...(Object.keys(CATEGORIES) as CategorySection[]),
+  ...Object.values(CATEGORIES)
+    .flat()
+    .filter((item): item is CategoryWithoutOther => 'other' !== item),
+];
+
+export const isCategoryItem = (category: string): category is CategoryItem =>
+  CATEGORY_ITEMS.includes(category as CategoryItem);

@@ -1,4 +1,4 @@
-import { CreditCard, FileDown, Languages, LogOut, Tags } from 'lucide-react';
+import { CreditCard, FileDown, Languages, LogOut, Tags, Zap } from 'lucide-react';
 import type { GetServerSideProps } from 'next';
 import { signOut } from 'next-auth/react';
 import { useTranslation } from 'next-i18next';
@@ -150,6 +150,11 @@ const AccountPage: NextPageWithUser<{
               {t('bank_transactions.to_bank')}
             </AccountButton>
           </BankConnection>
+
+          <AccountButton href="/shortcuts">
+            <Zap className="size-5 text-amber-400" />
+            {t('shortcuts.title')}
+          </AccountButton>
 
           {feedBackPossible && <SubmitFeedback />}
 
