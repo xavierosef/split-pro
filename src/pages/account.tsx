@@ -8,6 +8,7 @@ import {
   HeartHandshakeIcon,
   Languages,
   Star,
+  Zap,
 } from 'lucide-react';
 import type { GetServerSideProps } from 'next';
 import { signOut } from 'next-auth/react';
@@ -135,6 +136,11 @@ const AccountPage: NextPageWithUser<{
               {t('bank_transactions.to_bank')}
             </AccountButton>
           </BankConnection>
+
+          <AccountButton href="/shortcuts">
+            <Zap className="size-5 text-amber-400" />
+            {t('shortcuts.title')}
+          </AccountButton>
 
           <AccountButton href="https://github.com/oss-apps/split-pro">
             <SiGithub className="size-5" />

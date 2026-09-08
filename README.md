@@ -80,6 +80,10 @@ Recurring expenses require a PostgreSQL database with the `pg_cron` extension. W
 
 Bank integration allows you to load transactions from providers like Plaid and convert them into expenses. This feature was provided by @alexanderwassbjer, who is currently maintaining related issues. See [docs/BANK_TRANSACTIONS.md](docs/BANK_TRANSACTIONS.md).
 
+### 10) iPhone shortcut
+
+Expenses can be added from an iOS Shortcut - for example straight after an Apple Pay payment - using a revocable token created from **Account > iPhone shortcut**. The token can only add an expense to the group or friend it was created for, and the server picks the category from the merchant name. See [docs/APPLE_PAY_SHORTCUT.md](docs/APPLE_PAY_SHORTCUT.md).
+
 ## Limitations and notes
 
 - SplitPro computes balances from expenses on the fly using database views. Expenses are the source of truth, which keeps balances consistent and trustworthy. For self hosted deployments the efficiency of database aggregations is entirely sufficient, but please do report any performance issues.
@@ -95,6 +99,7 @@ Bank integration allows you to load transactions from providers like Plaid and c
 - [docs/CURRENCY_CONVERSIONS.md](docs/CURRENCY_CONVERSIONS.md)
 - [docs/RECURRING_TRANSACTIONS.md](docs/RECURRING_TRANSACTIONS.md)
 - [docs/BANK_TRANSACTIONS.md](docs/BANK_TRANSACTIONS.md)
+- [docs/APPLE_PAY_SHORTCUT.md](docs/APPLE_PAY_SHORTCUT.md)
 - [docker/README.md](docker/README.md)
 
 ## Versions
