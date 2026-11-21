@@ -1,4 +1,4 @@
-import { suggestCategory, tokenize, type CategoryHistoryEntry } from './categoryMemory';
+import { type CategoryHistoryEntry, suggestCategory, tokenize } from './categoryMemory';
 
 const HISTORY: CategoryHistoryEntry[] = [
   { name: 'KFC', category: 'dining_out', count: 12 },

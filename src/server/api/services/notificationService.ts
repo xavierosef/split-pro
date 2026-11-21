@@ -1,6 +1,7 @@
 import { SplitType } from '@prisma/client';
 import { isCurrencyCode } from '~/lib/currency';
 import { type ExpenseFieldChange, describeExpenseChanges } from '~/lib/expenseDiff';
+import { SubscriptionEndpointSchema } from '~/types/notifications';
 import { type PushMessage } from '~/types';
 
 import { db } from '~/server/db';
@@ -71,15 +72,12 @@ const collectExpenseChanges = async (
 
 export const getSubscriptionEndpoint = (subscription: string) => {
   try {
-    const parsed = JSON.parse(subscription) as { endpoint?: string };
-    if ('string' === typeof parsed.endpoint && '' !== parsed.endpoint) {
-      return parsed.endpoint;
-    }
+    const parsed: unknown = JSON.parse(subscription);
+    const validated = SubscriptionEndpointSchema.safeParse(parsed);
+    return validated.success ? validated.data.endpoint : null;
   } catch {
     return null;
   }
-
-  return null;
 };
 
 const removeStalePushSubscriptions = async (
@@ -118,7 +116,7 @@ export const sendPushNotificationToUsers = async (userIds: number[], pushData: P
   const pushResults = await Promise.all(
     subscriptions.map(async (s) => {
       const result = await pushNotification(s.subscription, pushData);
-      return { ...result, userId: s.userId, endpoint: s.endpoint };
+      return Object.assign(result, { userId: s.userId, endpoint: s.endpoint });
     }),
   );
 
@@ -133,6 +131,8 @@ export const sendPushNotificationToUsers = async (userIds: number[], pushData: P
 
 export async function sendExpensePushNotification(
   expenseId: string,
+  editorId?: number,
+  previousParticipantIds: number[] = [],
   before?: ExpenseSnapshot,
 ) {
   const expense = await db.expense.findUnique({
@@ -274,10 +274,17 @@ export async function sendExpensePushNotification(
     },
   };
 
-  await sendPushNotificationToUsers(
-    participants.map((p) => p.userId),
-    pushData,
-  );
+  const recipients =
+    undefined !== editorId
+      ? [
+          ...new Set([
+            expense.paidBy,
+            ...expense.expenseParticipants.map((p) => p.userId),
+            ...previousParticipantIds,
+          ]),
+        ].filter((id) => id !== editorId)
+      : participants.map((p) => p.userId);
+  await sendPushNotificationToUsers(recipients, pushData);
 }
 
 export async function sendGroupSimplifyDebtsToggleNotification(

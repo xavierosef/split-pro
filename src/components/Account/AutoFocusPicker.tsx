@@ -1,7 +1,8 @@
 import { Keyboard } from 'lucide-react';
 import { useTranslation } from 'next-i18next';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ChoiceRow } from '~/components/Account/ChoiceRow';
+import { useIsClient } from '~/hooks/useIsClient';
 import {
   AUTOFOCUS_TARGETS,
   type AutoFocusTarget,
@@ -11,9 +12,10 @@ import {
 
 export const AutoFocusPicker: React.FC = () => {
   const { t } = useTranslation();
-  const [current, setCurrent] = useState<AutoFocusTarget>('amount');
-
-  useEffect(() => setCurrent(getAutoFocusTarget()), []);
+  const isClient = useIsClient();
+  const [picked, setPicked] = useState<AutoFocusTarget | null>(null);
+  // LocalStorage only exists after hydration.
+  const current = picked ?? (isClient ? getAutoFocusTarget() : 'amount');
 
   return (
     <ChoiceRow
@@ -26,7 +28,7 @@ export const AutoFocusPicker: React.FC = () => {
       }))}
       onPick={(key) => {
         setAutoFocusTarget(key as AutoFocusTarget);
-        setCurrent(key as AutoFocusTarget);
+        setPicked(key as AutoFocusTarget);
       }}
     />
   );

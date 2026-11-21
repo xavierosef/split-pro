@@ -7,8 +7,10 @@ import { customIcon } from '~/lib/customCategoryIcons';
 import { isCustomCategory } from '~/lib/customCategories';
 import { api } from '~/utils/api';
 
-// Un seul endroit sait resoudre une categorie — par defaut ou personnalisee —
-// en couleur, icone et libelle. Les ecrans n'ont pas a connaitre la difference.
+/*
+ * Un seul endroit sait resoudre une categorie — par defaut ou personnalisee —
+ * en couleur, icone et libelle. Les ecrans n'ont pas a connaitre la difference.
+ */
 export const useCategoryResolver = () => {
   const { t } = useTranslation('categories');
   const customQuery = api.categories.list.useQuery(undefined, { staleTime: 5 * 60_000 });
@@ -31,8 +33,10 @@ export const useCategoryResolver = () => {
     [byId],
   );
 
-  // Les libelles d'origine vivent sous categories_list.<famille>.items.<cle> ;
-  // une categorie « other » est stockee sous le nom de sa famille.
+  /*
+   * Les libelles d'origine vivent sous categories_list.<famille>.items.<cle> ;
+   * une categorie « other » est stockee sous le nom de sa famille.
+   */
   const name = useCallback(
     (category?: string | null) => {
       const custom = byId.get(category ?? '');

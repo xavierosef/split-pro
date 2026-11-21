@@ -89,6 +89,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         history.map((row) => ({
           name: row.name,
           category: row.category,
+          // oxlint-disable-next-line no-underscore-dangle -- Prisma's aggregate API names these fields.
           count: row._count._all,
         })),
       ) ?? DEFAULT_CATEGORY;

@@ -1,9 +1,15 @@
-// Memoire de categorie : la categorie d'une nouvelle depense est devinee a
-// partir des depenses passees portant un libelle proche. « KFC » retrouve la
-// categorie mise la derniere fois qu'on a tape « KFC », sans table de mots-cles
-// a maintenir — l'historique EST la configuration.
+/*
+ * Memoire de categorie : la categorie d'une nouvelle depense est devinee a
+ * partir des depenses passees portant un libelle proche. « KFC » retrouve la
+ * categorie mise la derniere fois qu'on a tape « KFC », sans table de mots-cles
+ * a maintenir — l'historique EST la configuration.
+ */
 
-export type CategoryHistoryEntry = { name: string; category: string; count: number };
+export interface CategoryHistoryEntry {
+  name: string;
+  category: string;
+  count: number;
+}
 
 const STOPWORDS = new Set([
   'a',
@@ -81,8 +87,10 @@ export const suggestCategory = (
       continue;
     }
 
-    // A score egal, l'habitude tranche : la categorie la plus souvent utilisee
-    // avec ce libelle gagne.
+    /*
+     * A score egal, l'habitude tranche : la categorie la plus souvent utilisee
+     * avec ce libelle gagne.
+     */
     if (!best || score > best.score || (score === best.score && entry.count > best.count)) {
       best = { category: entry.category, score, count: entry.count };
     }

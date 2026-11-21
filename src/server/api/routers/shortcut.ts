@@ -47,6 +47,7 @@ export const shortcutRouter = createTRPCRouter({
       lastUsedAt: token.lastUsedAt,
       revokedAt: token.revokedAt,
       group: token.group,
+      // oxlint-disable-next-line no-underscore-dangle -- Prisma's relation count field.
       expenseCount: token._count.expenses,
       friend: null === token.friendId ? null : (friendMap.get(token.friendId) ?? null),
     }));

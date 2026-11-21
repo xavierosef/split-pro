@@ -72,11 +72,7 @@ const eur = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' 
 
 export const formatCents = (cents: bigint): string => eur.format(Number(cents) / 100);
 
-export const summarizeQuickExpense = (
-  cents: bigint,
-  name: string,
-  partnerName: string,
-): string => {
+export const summarizeQuickExpense = (cents: bigint, name: string, partnerName: string): string => {
   const { other } = equalSplitNets(cents);
   return `${formatCents(cents)} · ${name} · ${partnerName} te doit ${formatCents(-other)}`;
 };

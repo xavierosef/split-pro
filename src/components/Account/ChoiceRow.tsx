@@ -8,8 +8,10 @@ interface Option {
   label: string;
 }
 
-// Meme grammaire que les lignes du formulaire d'ajout : libelle a gauche,
-// valeur a droite, le tiroir s'ouvre au clic n'importe ou sur la ligne.
+/*
+ * Meme grammaire que les lignes du formulaire d'ajout : libelle a gauche,
+ * valeur a droite, le tiroir s'ouvre au clic n'importe ou sur la ligne.
+ */
 export const ChoiceRow: React.FC<{
   label: string;
   icon?: React.ReactNode;

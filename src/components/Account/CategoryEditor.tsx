@@ -25,9 +25,11 @@ const CategoryForm: React.FC<{
   const utils = api.useUtils();
   const upsert = api.categories.upsert.useMutation();
 
-  // Marquer ce qui est deja pris evite de creer deux categories jumelles
-  // qu'on ne distinguera plus d'un coup d'oeil dans la liste. On compte les
-  // categories d'origine autant que les personnalisees.
+  /*
+   * Marquer ce qui est deja pris evite de creer deux categories jumelles
+   * qu'on ne distinguera plus d'un coup d'oeil dans la liste. On compte les
+   * categories d'origine autant que les personnalisees.
+   */
   const usedIcons = new Set([
     ...BUILTIN_ICON_NAMES,
     ...others.filter((c) => c.id !== initial?.id).map((c) => c.icon),
@@ -37,6 +39,7 @@ const CategoryForm: React.FC<{
     ...others.filter((c) => c.id !== initial?.id).map((c) => c.color),
   ]);
 
+  const initialId = initial?.id;
   const [name, setName] = useState(initial?.name ?? '');
   const [icon, setIcon] = useState(initial?.icon ?? ICON_NAMES[0]!);
   const [color, setColor] = useState(initial?.color ?? CUSTOM_COLORS[0]!);
@@ -46,14 +49,14 @@ const CategoryForm: React.FC<{
       return;
     }
     try {
-      await upsert.mutateAsync({ id: initial?.id, name: name.trim(), icon, color });
+      await upsert.mutateAsync({ id: initialId, name: name.trim(), icon, color });
       await utils.categories.list.invalidate();
       onDone();
     } catch (e) {
       toast.error(t('errors.something_went_wrong'));
       console.error(e);
     }
-  }, [name, icon, color, initial?.id, upsert, utils, onDone, t]);
+  }, [name, icon, color, initialId, upsert, utils, onDone, t]);
 
   const Preview = CUSTOM_ICONS[icon]!;
 

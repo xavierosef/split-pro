@@ -366,8 +366,10 @@ export const addExpenseFromShortcut = async (
       },
     });
   } catch (error) {
-    // Another run of the same shortcut won the race between the lookup above and
-    // this insert: drop the expense just created and hand back the original one.
+    /*
+     * Another run of the same shortcut won the race between the lookup above and
+     * this insert: drop the expense just created and hand back the original one.
+     */
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       'P2002' === error.code &&
