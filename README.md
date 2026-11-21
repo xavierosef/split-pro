@@ -10,6 +10,46 @@
 
 SplitPro is a self-hosted, open source way to share expenses with friends. It is designed as a replacement for Splitwise.
 
+## Ce fork : image `splitpro-xav`
+
+Ce dépôt est un fork personnel. La branche `xav/customisations` porte le code déployé : l'upstream
+[`oss-apps/split-pro`](https://github.com/oss-apps/split-pro) plus les personnalisations (refonte
+UI, catégories perso, `/api/quick-expense`, raccourcis iOS `/api/shortcuts/expense`). Elle se met à
+jour en y fusionnant `main` de l'upstream.
+
+### Construire l'image
+
+Depuis un clone **complet** (pas `--depth`), à la racine du dépôt :
+
+```bash
+git checkout xav/customisations && git pull
+# Les tags de release upstream (v2.1.6…) ne sont pas tous sur le fork : ils fixent le numéro.
+git fetch https://github.com/oss-apps/split-pro.git 'refs/tags/v*:refs/tags/v*'
+TAG=$(git describe --tags --match 'v*' | sed -E 's/-g[0-9a-f]+$//')
+docker build \
+  --build-arg APP_VERSION="$TAG" \
+  --build-arg GIT_SHA="$(git rev-parse HEAD)" \
+  -t "splitpro-xav:$TAG" .
+echo "$TAG"
+```
+
+### Le tag
+
+`splitpro-xav:<dernière release upstream>-<commits depuis cette release>`, c'est-à-dire la sortie
+de `git describe` sans le suffixe `-g<sha>`. `splitpro-xav:v2.1.5-22` est ainsi le commit
+`867d104`, 22 commits après `v2.1.5`. Le tag est déterministe : un même commit donne toujours le
+même tag, et deux commits différents de la branche ne peuvent pas en partager un. Le SHA complet
+est aussi gravé dans l'image (`NEXT_PUBLIC_GIT_SHA`), pour retrouver le commit d'un conteneur.
+
+### Déployer
+
+Remplacer l'image du conteneur par le nouveau tag. Les migrations Prisma s'appliquent seules au
+démarrage, et le conteneur s'arrête si l'une échoue : **sauvegarder la base avant** de passer à une
+image qui en apporte (c'est le cas de la première image construite après la fusion de
+l'upstream de novembre 2026 : `user_deleted_at`, `add_balance_cutoff`,
+`date_only_recurrence`). `/api/quick-expense` reste fermé tant que `QUICK_EXPENSE_TOKEN` n'est
+pas défini.
+
 ## Quick start
 
 1. Use Docker Compose from [docker/prod/compose.yml](docker/prod/compose.yml).
