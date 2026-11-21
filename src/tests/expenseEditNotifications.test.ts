@@ -52,7 +52,8 @@ describe('expense edit notifications', () => {
       'subscription',
       expect.objectContaining({
         title: 'Editor',
-        message: expect.stringContaining('Updated Dinner'),
+        // Fork: push messages are in French (notificationService).
+        message: expect.stringContaining('a modifié Dinner'),
         data: { url: '/expenses/expense-id' },
       }),
     );

@@ -55,6 +55,9 @@ export async function createExpense(
   currentUserId: number,
   conversionFromParams?: CreateExpense,
 ) {
+  // Every caller gets these checks, including the token-authenticated API routes.
+  await assertExpenseParties(currentUserId, groupId, paidBy, participants);
+
   const nonZeroParticipants = getNonZeroParticipants(participants);
 
   const conversionFrom = conversionFromParams
@@ -163,6 +166,56 @@ export async function deleteExpense(expenseId: string, deletedBy: number) {
 
   await db.$transaction(operations);
   sendExpensePushNotification(expenseId).catch(console.error);
+}
+
+/**
+ * Outside a group nothing ties the payer and participants together but the actor, so an actor
+ * who neither pays nor holds a share cannot create a debt between other people. Without this,
+ * any signed-in account could record a debt between two other people.
+ */
+export function assertActorInvolvedInExpense(
+  actorId: number,
+  paidBy: number,
+  participants: { userId: number; amount: bigint }[],
+) {
+  const actorHasStake =
+    actorId === paidBy ||
+    participants.some(({ userId, amount }) => userId === actorId && 0n !== amount);
+  if (!actorHasStake && participants.some(({ amount }) => 0n !== amount)) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'You must pay or share an expense that is not in a group',
+    });
+  }
+}
+
+/**
+ * Group expenses: the actor, the payer and the participants are members. Other expenses: the
+ * actor is involved. The router checks the actor first with a friendlier error; this repeats it
+ * for callers that authenticate on their own.
+ */
+export async function assertExpenseParties(
+  actorId: number,
+  groupId: number | null,
+  paidBy: number,
+  participants: { userId: number; amount: bigint }[],
+) {
+  if (null === groupId) {
+    assertActorInvolvedInExpense(actorId, paidBy, participants);
+    return;
+  }
+  const actorMembership = await db.groupUser.findUnique({
+    where: { groupId_userId: { groupId, userId: actorId } },
+    select: { userId: true },
+  });
+  if (!actorMembership) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'Not a group member' });
+  }
+  await assertExpenseGroupMembers(
+    groupId,
+    paidBy,
+    participants.map(({ userId }) => userId),
+  );
 }
 
 // Call after checking the actor's permission to write to the group.
@@ -292,6 +345,11 @@ export async function editExpense(
       paidBy,
       participants.map((p) => p.userId),
     );
+  }
+
+  // Same rule as on creation: an ungrouped expense cannot be rewritten into other people's debt.
+  if (null === groupId && !metadataOnly) {
+    assertActorInvolvedInExpense(currentUserId, paidBy, participants);
   }
 
   try {

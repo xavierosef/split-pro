@@ -73,6 +73,11 @@ export const deleteAccount = async (
 
         await tx.account.deleteMany({ where: { userId } });
         await tx.session.deleteMany({ where: { userId } });
+        // Fork: iOS shortcut tokens authenticate on their own, without a session.
+        await tx.shortcutToken.updateMany({
+          where: { userId, revokedAt: null },
+          data: { revokedAt: new Date() },
+        });
         if (user.email) {
           await tx.verificationToken.deleteMany({ where: { identifier: user.email } });
         }

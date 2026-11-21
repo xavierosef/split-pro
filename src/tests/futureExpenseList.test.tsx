@@ -20,7 +20,13 @@ const mockUtils = {
   },
 };
 
-jest.mock('~/utils/api', () => ({ api: { useUtils: () => mockUtils } }));
+jest.mock('~/utils/api', () => ({
+  api: {
+    useUtils: () => mockUtils,
+    // Fork: CategoryTile reads the custom categories.
+    categories: { list: { useQuery: () => ({ data: [] }) } },
+  },
+}));
 
 const today = new Date(2026, 0, 2, 12);
 const tomorrow = new Date(2026, 0, 3);
