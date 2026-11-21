@@ -1,4 +1,6 @@
-import { SplitType, type User } from '@prisma/client';
+import { randomUUID } from 'node:crypto';
+import { Prisma, SplitType, type User } from '@prisma/client';
+import { TRPCError } from '@trpc/server';
 import { nanoid } from 'nanoid';
 
 import { db } from '~/server/db';
@@ -7,6 +9,7 @@ import { type SplitwiseGroup, type SplitwiseUser } from '~/types';
 import type { CreateExpense } from '~/types/expense.types';
 import { sendExpensePushNotification } from './notificationService';
 import { createRecurringExpenseJob } from './scheduleService';
+import { getRecurrenceSchedule } from './recurrenceScheduleService';
 import { getCurrencyHelpers } from '~/utils/numbers';
 import { isCurrencyCode } from '~/lib/currency';
 import { DEFAULT_CATEGORY } from '~/lib/category';
@@ -47,10 +50,14 @@ export async function createExpense(
     fileKey,
     transactionId,
     cronExpression,
+    initialComment,
   }: CreateExpense & { cronExpression?: string },
   currentUserId: number,
   conversionFromParams?: CreateExpense,
 ) {
+  // Every caller gets these checks, including the token-authenticated API routes.
+  await assertExpenseParties(currentUserId, groupId, paidBy, participants);
+
   const nonZeroParticipants = getNonZeroParticipants(participants);
 
   const conversionFrom = conversionFromParams
@@ -69,27 +76,17 @@ export async function createExpense(
     delete conversionFrom.create.participants;
   }
 
-  // Pre-generate UUID and create cron job if recurring (before transaction)
-  let expenseId: string | undefined = undefined;
-  let jobId: bigint | undefined = undefined;
+  const createdExpense = await db.$transaction(async (tx) => {
+    const expenseId = randomUUID();
+    const jobId = cronExpression
+      ? (await createRecurringExpenseJob(expenseId, cronExpression, tx))[0].schedule
+      : undefined;
+    const recurrence =
+      undefined === jobId ? undefined : await tx.expenseRecurrence.create({ data: { jobId } });
 
-  if (cronExpression) {
-    const [{ gen_random_uuid }] = await db.$queryRaw<[{ gen_random_uuid: string }]>`
-      SELECT gen_random_uuid()::text as gen_random_uuid
-    `;
-    expenseId = gen_random_uuid;
-
-    const [{ schedule }] = await createRecurringExpenseJob(expenseId, cronExpression);
-    jobId = schedule;
-  }
-
-  const operations = [];
-
-  // Create expense operation
-  operations.push(
-    db.expense.create({
+    return tx.expense.create({
       data: {
-        ...(expenseId && { id: expenseId }),
+        id: expenseId,
         groupId,
         paidBy,
         name,
@@ -105,42 +102,16 @@ export async function createExpense(
         expenseDate,
         transactionId,
         conversionFrom,
+        recurrenceId: recurrence?.id,
+        expenseNotes: initialComment?.trim()
+          ? { create: { note: initialComment.trim(), createdById: currentUserId } }
+          : undefined,
       },
-    }),
-  );
+    });
+  });
 
-  // Link recurrence to expense if we created a cron job
-  if (expenseId && jobId) {
-    operations.push(
-      db.expenseRecurrence.create({
-        data: {
-          expense: {
-            connect: { id: expenseId },
-          },
-          job: {
-            connect: { jobid: jobId },
-          },
-        },
-      }),
-    );
-  }
-
-  try {
-    const results = await db.$transaction(operations);
-    const createdExpense = results[0] as Awaited<ReturnType<typeof db.expense.create>>;
-    if (!createdExpense) {
-      throw new Error('Expense creation failed');
-    }
-
-    sendExpensePushNotification(createdExpense.id).catch(console.error);
-    return createdExpense;
-  } catch (error) {
-    // If we created a cron job but transaction failed, clean up the cron job
-    if (expenseId) {
-      await db.$executeRaw`SELECT cron.unschedule(${`expense_recurring_${expenseId}`})`;
-    }
-    throw error;
-  }
+  sendExpensePushNotification(createdExpense.id).catch(console.error);
+  return createdExpense;
 }
 
 export async function deleteExpense(expenseId: string, deletedBy: number) {
@@ -197,10 +168,94 @@ export async function deleteExpense(expenseId: string, deletedBy: number) {
   sendExpensePushNotification(expenseId).catch(console.error);
 }
 
+/**
+ * Outside a group nothing ties the payer and participants together but the actor, so an actor
+ * who neither pays nor holds a share cannot create a debt between other people. Without this,
+ * any signed-in account could record a debt between two other people.
+ */
+export function assertActorInvolvedInExpense(
+  actorId: number,
+  paidBy: number,
+  participants: { userId: number; amount: bigint }[],
+) {
+  const actorHasStake =
+    actorId === paidBy ||
+    participants.some(({ userId, amount }) => userId === actorId && 0n !== amount);
+  if (!actorHasStake && participants.some(({ amount }) => 0n !== amount)) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'You must pay or share an expense that is not in a group',
+    });
+  }
+}
+
+/**
+ * Group expenses: the actor, the payer and the participants are members. Other expenses: the
+ * actor is involved. The router checks the actor first with a friendlier error; this repeats it
+ * for callers that authenticate on their own.
+ */
+export async function assertExpenseParties(
+  actorId: number,
+  groupId: number | null,
+  paidBy: number,
+  participants: { userId: number; amount: bigint }[],
+) {
+  if (null === groupId) {
+    assertActorInvolvedInExpense(actorId, paidBy, participants);
+    return;
+  }
+  const actorMembership = await db.groupUser.findUnique({
+    where: { groupId_userId: { groupId, userId: actorId } },
+    select: { userId: true },
+  });
+  if (!actorMembership) {
+    throw new TRPCError({ code: 'FORBIDDEN', message: 'Not a group member' });
+  }
+  await assertExpenseGroupMembers(
+    groupId,
+    paidBy,
+    participants.map(({ userId }) => userId),
+  );
+}
+
+// Call after checking the actor's permission to write to the group.
+export async function assertExpenseGroupMembers(
+  groupId: number | null,
+  paidBy: number,
+  participantUserIds: number[],
+) {
+  if (null === groupId) {
+    return;
+  }
+
+  const members = await db.groupUser.findMany({
+    where: {
+      groupId,
+      userId: {
+        in: [paidBy, ...participantUserIds],
+      },
+    },
+    select: { userId: true },
+  });
+  const memberIds = new Set(members.map((member) => member.userId));
+
+  if (!memberIds.has(paidBy)) {
+    throw new TRPCError({ code: 'BAD_REQUEST', message: 'Payer is not a member of the group' });
+  }
+
+  if (participantUserIds.some((userId) => !memberIds.has(userId))) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Participant is not a member of the group',
+    });
+  }
+}
+
 export async function editExpense(
   {
     expenseId,
     paidBy,
+    groupId,
     name,
     category,
     amount,
@@ -222,6 +277,7 @@ export async function editExpense(
   const expense = await db.expense.findUnique({
     where: { id: expenseId },
     include: {
+      conversionFrom: { select: { id: true } },
       expenseParticipants: true,
       recurrence: {
         include: {
@@ -233,6 +289,13 @@ export async function editExpense(
 
   if (!expense) {
     throw new Error('Expense not found');
+  }
+
+  if ((expense.conversionToId || expense.conversionFrom) && !conversionToParams) {
+    throw new TRPCError({
+      code: 'BAD_REQUEST',
+      message: 'Currency conversions must be edited together',
+    });
   }
 
   // Capture avant l'update : la notification annonce l'avant/apres.
@@ -250,82 +313,138 @@ export async function editExpense(
     : null;
   const isTemplate = templateId === expenseId;
 
-  const operations = [];
-
-  // Delete existing participants
-  operations.push(
-    db.expenseParticipant.deleteMany({
-      where: {
-        expenseId: expense.conversionToId ? { in: [expenseId, expense.conversionToId] } : expenseId,
-      },
-    }),
+  const storedParticipants = new Map(
+    expense.expenseParticipants.map((participant) => [participant.userId, participant.amount]),
   );
+  const metadataOnly =
+    !conversionToParams &&
+    groupId === expense.groupId &&
+    paidBy === expense.paidBy &&
+    amount === expense.amount &&
+    currency === expense.currency &&
+    splitType === expense.splitType &&
+    (!expenseDate || expenseDate.getTime() === expense.expenseDate.getTime()) &&
+    (isTemplate
+      ? Boolean(
+          cronExpression &&
+          getRecurrenceSchedule(cronExpression) === expense.recurrence?.job?.schedule,
+        )
+      : !cronExpression) &&
+    participants.filter((p) => 0n !== p.amount).length ===
+      expense.expenseParticipants.filter((p) => 0n !== p.amount).length &&
+    participants.every(
+      (p) =>
+        (storedParticipants.has(p.userId) || p.userId === expense.paidBy) &&
+        p.amount === (storedParticipants.get(p.userId) ?? 0n),
+    );
 
-  // Update expense with new details and create new participants
-  operations.push(
-    db.expense.update({
-      where: { id: expenseId },
-      data: {
-        paidBy,
-        name,
-        category,
-        amount,
-        splitType,
-        currency,
-        expenseParticipants: {
-          create: participants,
-        },
-        fileKey,
-        transactionId,
-        expenseDate,
-        updatedBy: currentUserId,
-      },
-    }),
-  );
-  if (conversionToParams) {
-    if (!expense.conversionToId) {
-      throw new Error('Conversion to expense not found for editing');
-    }
-    const { participants: toParticipants, ...toExpenseData } = conversionToParams;
-
-    operations.push(
-      db.expense.update({
-        where: { id: expense.conversionToId },
-        data: {
-          ...toExpenseData,
-          expenseParticipants: {
-            create: toParticipants,
-          },
-          updatedBy: currentUserId,
-        },
-      }),
+  // Historical members may remain on settled expenses, but cannot take on new obligations.
+  if (!conversionToParams && !metadataOnly) {
+    await assertExpenseGroupMembers(
+      groupId,
+      paidBy,
+      participants.map((p) => p.userId),
     );
   }
 
-  // Handle recurrence changes only for template expenses
-  if (isTemplate && expense.recurrence?.job) {
-    const currentSchedule = expense.recurrence.job.schedule;
-
-    if (cronExpression && cronExpression !== currentSchedule) {
-      // Schedule changed - update the cron job
-      operations.push(
-        db.$executeRaw`SELECT cron.alter_job(${expense.recurrence.job.jobid}, schedule := ${cronExpression})`,
-      );
-    } else if (!cronExpression) {
-      // Recurrence removed - unschedule and delete recurrence record
-      operations.push(db.$executeRaw`SELECT cron.unschedule(${expense.recurrence.job.jobname})`);
-      operations.push(
-        db.expenseRecurrence.delete({
-          where: { id: expense.recurrence.id },
-        }),
-      );
-    }
-    // If cronExpression === currentSchedule, no action needed
+  // Same rule as on creation: an ungrouped expense cannot be rewritten into other people's debt.
+  if (null === groupId && !metadataOnly) {
+    assertActorInvolvedInExpense(currentUserId, paidBy, participants);
   }
-  // For derived expenses, cronExpression is ignored entirely
 
-  await db.$transaction(operations);
-  sendExpensePushNotification(expenseId, before).catch(console.error);
+  try {
+    await db.$transaction(async (tx) => {
+      await tx.expenseParticipant.deleteMany({
+        where: {
+          expenseId: expense.conversionToId
+            ? { in: [expenseId, expense.conversionToId] }
+            : expenseId,
+        },
+      });
+
+      const updatedExpense = await tx.expense.update({
+        // Write-time check: a concurrent edit may have grouped the expense after validation.
+        where: {
+          id: expenseId,
+          OR: [{ groupId: null }, { groupId }],
+          // Do not restore old balances if another edit changed them after the comparison.
+          ...(metadataOnly ? { updatedAt: expense.updatedAt } : {}),
+        },
+        data: {
+          paidBy,
+          groupId,
+          name,
+          category,
+          amount,
+          splitType,
+          currency,
+          expenseParticipants: { create: participants },
+          fileKey,
+          transactionId,
+          expenseDate,
+          updatedBy: currentUserId,
+        },
+      });
+
+      if (conversionToParams) {
+        if (!expense.conversionToId) {
+          throw new Error('Conversion to expense not found for editing');
+        }
+        const { participants: toParticipants, ...toExpenseData } = conversionToParams;
+        await tx.expense.update({
+          // The target can be grouped on its own, so it gets the same write-time check.
+          where: {
+            id: expense.conversionToId,
+            OR: [{ groupId: null }, { groupId: toExpenseData.groupId }],
+          },
+          data: {
+            ...toExpenseData,
+            expenseParticipants: { create: toParticipants },
+            updatedBy: currentUserId,
+          },
+        });
+      }
+
+      // Only template edits change an existing recurrence; derived edits leave it alone.
+      if (isTemplate && expense.recurrence?.job) {
+        const currentSchedule = expense.recurrence.job.schedule;
+        if (cronExpression && cronExpression !== currentSchedule) {
+          await tx.$executeRaw`SELECT cron.alter_job(${expense.recurrence.job.jobid}, schedule := ${getRecurrenceSchedule(cronExpression)})`;
+        } else if (!cronExpression) {
+          await tx.$executeRaw`SELECT cron.unschedule(${expense.recurrence.job.jobname})`;
+          await tx.expenseRecurrence.delete({ where: { id: expense.recurrence.id } });
+        }
+      }
+
+      // The update holds the expense's row lock and returns its current recurrence ID.
+      // Concurrent edits must not create a second recurrence from a stale read.
+      if (null === updatedExpense.recurrenceId && cronExpression && !expense.recurrence) {
+        const [{ schedule: jobId }] = await createRecurringExpenseJob(
+          expenseId,
+          cronExpression,
+          tx,
+        );
+        await tx.expense.update({
+          where: { id: expenseId },
+          data: { recurrence: { create: { jobId } } },
+        });
+      }
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && 'P2025' === error.code) {
+      throw new TRPCError({
+        code: 'CONFLICT',
+        message: 'This expense was changed by someone else. Reload it and try again.',
+      });
+    }
+    throw error;
+  }
+  sendExpensePushNotification(
+    expenseId,
+    currentUserId,
+    expense.expenseParticipants.map((p) => p.userId),
+    before,
+  ).catch(console.error);
   return { id: expenseId }; // Return the updated expense
 }
 
@@ -339,26 +458,8 @@ export async function getCompleteFriendsDetails(userId: number) {
     },
   });
 
-  const friends = viewBalances.reduce(
-    (acc, balance) => {
-      const { friendId } = balance;
-      acc[friendId] ??= {
-        balances: [],
-        id: friendId,
-        email: balance.friend.email,
-        name: balance.friend.name,
-      };
-
-      if (0n !== balance.amount) {
-        acc[friendId]?.balances.push({
-          currency: balance.currency,
-          amount: balance.amount,
-        });
-      }
-
-      return acc;
-    },
-    {} as Record<
+  const friends = viewBalances.reduce<
+    Record<
       number,
       {
         id: number;
@@ -366,8 +467,25 @@ export async function getCompleteFriendsDetails(userId: number) {
         name?: string | null;
         balances: { currency: string; amount: bigint }[];
       }
-    >,
-  );
+    >
+  >((acc, balance) => {
+    const { friendId } = balance;
+    acc[friendId] ??= {
+      balances: [],
+      id: friendId,
+      email: balance.friend.email,
+      name: balance.friend.name,
+    };
+
+    if (0n !== balance.amount) {
+      acc[friendId]?.balances.push({
+        currency: balance.currency,
+        amount: balance.amount,
+      });
+    }
+
+    return acc;
+  }, {});
 
   return friends;
 }
@@ -398,16 +516,13 @@ export async function importUserBalanceFromSplitWise(
 
   const users = await createUsersFromSplitwise(splitWiseUsers);
 
-  const userMap = users.reduce(
-    (acc, user) => {
-      if (user.email) {
-        acc[user.email] = user;
-      }
+  const userMap = users.reduce<Record<string, User>>((acc, user) => {
+    if (user.email) {
+      acc[user.email] = user;
+    }
 
-      return acc;
-    },
-    {} as Record<string, User>,
-  );
+    return acc;
+  }, {});
 
   const currencyHelperCache: Record<string, ReturnType<typeof getCurrencyHelpers>['toSafeBigInt']> =
     {};
@@ -428,7 +543,8 @@ export async function importUserBalanceFromSplitWise(
         }).toSafeBigInt;
       }
 
-      const amount = currencyHelperCache[currency](balance.amount);
+      // Splitwise balances are signed: a negative one is money the user owes
+      const amount = currencyHelperCache[currency](balance.amount, true);
 
       operations.push(
         db.expense.create({
@@ -442,7 +558,7 @@ export async function importUserBalanceFromSplitWise(
               create: [
                 {
                   userId: currentUserId,
-                  amount: amount,
+                  amount,
                 },
                 {
                   userId: dbUser.id,
@@ -512,16 +628,13 @@ export async function importGroupFromSplitwise(
 
   const users = await createUsersFromSplitwise(Object.values(splitwiseUserMap));
 
-  const userMap = users.reduce(
-    (acc, user) => {
-      if (user.email) {
-        acc[user.email] = user;
-      }
+  const userMap = users.reduce<Record<string, User>>((acc, user) => {
+    if (user.email) {
+      acc[user.email] = user;
+    }
 
-      return acc;
-    },
-    {} as Record<string, User>,
-  );
+    return acc;
+  }, {});
 
   const missingGroups = await Promise.all(
     splitWiseGroups.map(async (group) => {
@@ -539,7 +652,7 @@ export async function importGroupFromSplitwise(
     .filter((g) => null !== g)
     .map((group) => {
       const groupmembers = group.members.map((member) => ({
-        userId: userMap[member.email.toString()]!.id,
+        userId: userMap[member.email]!.id,
       }));
 
       return db.group.create({

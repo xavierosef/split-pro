@@ -1,7 +1,8 @@
 import { Type } from 'lucide-react';
 import { useTranslation } from 'next-i18next';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { ChoiceRow } from '~/components/Account/ChoiceRow';
+import { useIsClient } from '~/hooks/useIsClient';
 
 const STORAGE_KEY = 'cna-text-size';
 const SIZES = [
@@ -12,18 +13,23 @@ const SIZES = [
 
 type SizeKey = (typeof SIZES)[number]['key'];
 
+const storedTextSize = () => {
+  const stored = localStorage.getItem(STORAGE_KEY);
+  return SIZES.find((s) => s.key === stored) ?? SIZES[1];
+};
+
 export const applyStoredTextSize = () => {
-  const stored = localStorage.getItem(STORAGE_KEY) as SizeKey | null;
-  const size = SIZES.find((s) => s.key === stored) ?? SIZES[1];
+  const size = storedTextSize();
   document.documentElement.style.fontSize = `${size.px}px`;
   return size.key;
 };
 
 export const TextSizePicker: React.FC = () => {
   const { t } = useTranslation();
-  const [current, setCurrent] = useState<SizeKey>('normal');
-
-  useEffect(() => setCurrent(applyStoredTextSize()), []);
+  const isClient = useIsClient();
+  const [picked, setPicked] = useState<SizeKey | null>(null);
+  // LocalStorage only exists after hydration; _app applies the stored size on mount.
+  const current = picked ?? (isClient ? storedTextSize().key : 'normal');
 
   return (
     <ChoiceRow
@@ -33,7 +39,7 @@ export const TextSizePicker: React.FC = () => {
       options={SIZES.map(({ key }) => ({ key, label: t(`account.text_sizes.${key}`) }))}
       onPick={(key) => {
         localStorage.setItem(STORAGE_KEY, key);
-        setCurrent(applyStoredTextSize());
+        setPicked(applyStoredTextSize());
       }}
     />
   );

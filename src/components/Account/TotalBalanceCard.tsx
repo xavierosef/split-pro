@@ -3,19 +3,24 @@ import { useEffect, useMemo } from 'react';
 import { useTranslationWithUtils } from '~/hooks/useTranslationWithUtils';
 import { api } from '~/utils/api';
 
-// Le solde se lit comme un niveau de liquide dans un verre : plus tu dois,
-// plus ca monte. L'echelle est volontairement non lineaire — un ecart de 20 EUR
-// doit se voir, un ecart de 800 ne doit pas saturer le contenant.
+/*
+ * Le solde se lit comme un niveau de liquide dans un verre : plus tu dois,
+ * plus ca monte. L'echelle est volontairement non lineaire — un ecart de 20 EUR
+ * doit se voir, un ecart de 800 ne doit pas saturer le contenant.
+ */
 const REFERENCE_AMOUNT = 300;
-const fillRatio = (amount: number) => 0.1 + 0.72 * (1 - Math.exp(-Math.abs(amount) / REFERENCE_AMOUNT));
+const fillRatio = (amount: number) =>
+  0.1 + 0.72 * (1 - Math.exp(-Math.abs(amount) / REFERENCE_AMOUNT));
 
-// Trois profils de vague differents : superposes a des vitesses et des
-// amplitudes distinctes, ils ne se resynchronisent jamais, ce qui donne
-// l'impression d'un liquide reellement agite plutot que d'une boucle.
-// Chaque calque couvre TOUTE la hauteur du liquide et remplit jusqu'en bas :
-// c'est ce qui evite les bandes horizontales visibles la ou un calque
-// s'arretait. Seule la crete varie. Amplitude large et cretes irregulieres
-// pour que ca ne ressemble pas a une sinusoide.
+/*
+ * Trois profils de vague differents : superposes a des vitesses et des
+ * amplitudes distinctes, ils ne se resynchronisent jamais, ce qui donne
+ * l'impression d'un liquide reellement agite plutot que d'une boucle.
+ * Chaque calque couvre TOUTE la hauteur du liquide et remplit jusqu'en bas :
+ * c'est ce qui evite les bandes horizontales visibles la ou un calque
+ * s'arretait. Seule la crete varie. Amplitude large et cretes irregulieres
+ * pour que ca ne ressemble pas a une sinusoide.
+ */
 const WAVES = [
   {
     d: 'M0,30 C10,8 20,4 32,18 C44,32 54,44 66,30 C78,16 88,2 100,14 C112,26 122,42 134,32 C146,22 156,4 168,16 C180,28 190,34 200,24 L200,200 L0,200 Z',
@@ -96,9 +101,9 @@ export const TotalBalanceCard: React.FC = () => {
             opacity: 0.5,
           }}
         />
-        {WAVES.map((wave, i) => (
+        {WAVES.map((wave) => (
           <motion.svg
-            key={i}
+            key={wave.d}
             className="absolute inset-0 h-full w-[200%]"
             viewBox="0 0 200 200"
             preserveAspectRatio="none"

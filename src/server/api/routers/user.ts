@@ -1,5 +1,5 @@
 import { TRPCError } from '@trpc/server';
-import { type User } from 'next-auth';
+import { type Prisma, type PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 
 import { env } from '~/env';
@@ -8,9 +8,13 @@ import {
   serializeDefaultSplit,
   toSortedFriendPair,
 } from '~/lib/defaultSplit';
-import { simplifyDebts } from '~/lib/simplify';
-import { createTRPCRouter, protectedProcedure } from '~/server/api/trpc';
+import { claimInviteCooldown } from '~/lib/inviteCooldown';
+import { InviteErrorCode } from '~/lib/error/invite';
+import { getUserBalances } from '~/server/api/services/balanceQuery';
+import { AppError } from '~/server/api/appError';
+import { balanceProcedure, createTRPCRouter, protectedProcedure } from '~/server/api/trpc';
 import { db } from '~/server/db';
+import { deleteAccount } from '~/server/api/services/deleteAccount';
 import { sendFeedbackEmail, sendInviteEmail } from '~/server/mailer';
 import { SplitwiseGroupSchema, SplitwiseUserSchema } from '~/types';
 
@@ -25,8 +29,42 @@ import {
   importUserBalanceFromSplitWise,
 } from '../services/splitService';
 
+const getVisibleFriendWhere = (userId: number, friendId: number) =>
+  ({
+    id: friendId,
+    OR: [
+      { userBalances: { some: { friendId: userId } } },
+      {
+        associatedGroups: {
+          some: {
+            group: {
+              simplifyDebts: true,
+              groupUsers: { some: { userId } },
+            },
+          },
+        },
+      },
+    ],
+  }) satisfies Prisma.UserWhereUniqueInput;
+
+const throwInviteError = (
+  code: 'PRECONDITION_FAILED' | 'TOO_MANY_REQUESTS' | 'INTERNAL_SERVER_ERROR',
+  inviteErrorCode: (typeof InviteErrorCode)[keyof typeof InviteErrorCode],
+  message: string,
+): never => {
+  throw new TRPCError({ code, message, cause: new AppError(inviteErrorCode, message) });
+};
+
 export const userRouter = createTRPCRouter({
+  deleteAccount: protectedProcedure.mutation(async ({ ctx }) => {
+    await deleteAccount(ctx.db, ctx.session.user.id);
+  }),
+
   me: protectedProcedure.query(({ ctx }) => ctx.session.user),
+
+  getBalanceSettings: protectedProcedure.query(() => ({
+    excludeFutureExpenses: env.EXCLUDE_FUTURE_EXPENSES,
+  })),
 
   getFriends: protectedProcedure.query(async ({ ctx }) => {
     const friends = await db.balanceView.findMany({
@@ -36,6 +74,27 @@ export const userRouter = createTRPCRouter({
     });
 
     return friends.map((f) => f.friend);
+  }),
+
+  getDiscoverableUsers: protectedProcedure.query(async ({ ctx }) => {
+    if (!env.ENABLE_USER_DISCOVERY) {
+      return [];
+    }
+
+    const friends = await ctx.db.balanceView.findMany({
+      where: { userId: ctx.session.user.id, friendId: { notIn: ctx.session.user.hiddenFriendIds } },
+      select: { friendId: true },
+      distinct: ['friendId'],
+    });
+
+    return ctx.db.user.findMany({
+      where: {
+        deletedAt: null,
+        id: { notIn: [ctx.session.user.id, ...friends.map((friend) => friend.friendId)] },
+      },
+      select: { id: true, name: true, image: true },
+      orderBy: [{ name: 'asc' }, { id: 'asc' }],
+    });
   }),
 
   getOwnExpenses: protectedProcedure.query(async ({ ctx }) => {
@@ -58,89 +117,65 @@ export const userRouter = createTRPCRouter({
   inviteFriend: protectedProcedure
     .input(z.object({ email: z.string(), sendInviteEmail: z.boolean().optional() }))
     .mutation(async ({ input, ctx: { session } }) => {
-      const friend = await db.user.findUnique({
-        where: {
-          email: input.email,
-        },
-      });
-
-      if (friend) {
-        return friend;
-      }
-
-      const user = await db.user.create({
-        data: {
+      // Upsert avoids a find-then-create race where two concurrent invites for the same brand-new email both miss the lookup and hit the unique constraint.
+      const user = await db.user.upsert({
+        where: { email: input.email },
+        update: {},
+        create: {
           email: input.email,
           name: input.email.split('@')[0],
         },
       });
 
-      if (input.sendInviteEmail) {
-        sendInviteEmail(input.email, session.user.name ?? session.user.email ?? '').catch((err) => {
-          console.error('Error sending invite email', err);
-        });
+      // Only a just-created or not-yet-verified user should get an invite email.
+      if (input.sendInviteEmail && !user.emailVerified) {
+        if (!env.ENABLE_SENDING_INVITES) {
+          throwInviteError(
+            'PRECONDITION_FAILED',
+            InviteErrorCode.INVITES_DISABLED,
+            'Invite emails are disabled on this server.',
+          );
+        }
+
+        if (!claimInviteCooldown(user.id, session.user.id)) {
+          throwInviteError(
+            'TOO_MANY_REQUESTS',
+            InviteErrorCode.INVITE_RATE_LIMITED,
+            'Please wait before re-sending an invite to this address.',
+          );
+        }
+
+        let sent = false;
+        try {
+          sent = await sendInviteEmail(input.email, session.user.name ?? session.user.email ?? '');
+        } catch (err) {
+          console.error('Error sending invite email to user', user.id, err);
+        }
+        if (!sent) {
+          throwInviteError(
+            'INTERNAL_SERVER_ERROR',
+            InviteErrorCode.INVITE_EMAIL_SEND_FAILED,
+            'Failed to send invite email. Check your SMTP configuration.',
+          );
+        }
       }
 
       return user;
     }),
 
-  getBalancesWithFriend: protectedProcedure
+  getBalancesWithFriend: balanceProcedure
     .input(z.object({ friendId: z.number() }))
     .query(async ({ input, ctx }) => {
-      const rawBalances = await db.balanceView.findMany({
-        where: {
-          userId: ctx.session.user.id,
-          friendId: input.friendId,
-          amount: { not: 0 },
-        },
-        include: {
-          group: {
-            select: {
-              name: true,
-              simplifyDebts: true,
-            },
-          },
-        },
-      });
-
-      const processedBalances = await Promise.all(
-        rawBalances.map(async ({ groupId, currency, amount, group }) => {
-          // For non-simplifyDebts groups and non-group balances, use raw balance
-          if (!group?.simplifyDebts || null === groupId) {
-            return {
-              friendId: input.friendId,
-              currency,
-              amount,
-              groupId,
-              groupName: group?.name ?? null,
-            };
-          }
-
-          // For simplifyDebts groups, fetch all group balances and simplify
-          const allGroupBalances = await db.balanceView.findMany({
-            where: { groupId, currency },
-          });
-
-          const simplified = simplifyDebts(allGroupBalances);
-
-          const simplifiedBalance = simplified.find(
-            (b) =>
-              b.userId === ctx.session.user.id &&
-              b.friendId === input.friendId &&
-              b.currency === currency,
-          );
-
-          return {
-            friendId: input.friendId,
-            currency,
-            amount: simplifiedBalance?.amount ?? 0n,
-            groupId,
-            groupName: group.name,
-          };
-        }),
-      );
-
-      return processedBalances.filter((b) => 0n !== b.amount);
+      const balances = await getUserBalances(ctx.db, ctx.session.user.id);
+      return balances
+        .filter((balance) => balance.friendId === input.friendId && 0n !== balance.amount)
+        .map(({ friendId, currency, amount, groupId, group }) => ({
+          friendId,
+          currency,
+          amount,
+          groupId,
+          groupName: group?.name ?? null,
+        }));
     }),
 
   updateUserDetail: protectedProcedure
@@ -159,6 +194,7 @@ export const userRouter = createTRPCRouter({
       const user = await db.user.update({
         where: {
           id: ctx.session.user.id,
+          deletedAt: null,
         },
         data: {
           ...input,
@@ -170,11 +206,21 @@ export const userRouter = createTRPCRouter({
 
   getUserDetails: protectedProcedure
     .input(z.object({ userId: z.number() }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
       const user = await db.user.findUnique({
         where: {
           id: input.userId,
+          OR: [
+            { id: ctx.session.user.id },
+            { userBalances: { some: { friendId: ctx.session.user.id } } },
+            {
+              associatedGroups: {
+                some: { group: { groupUsers: { some: { userId: ctx.session.user.id } } } },
+              },
+            },
+          ],
         },
+        select: { id: true, name: true, email: true, image: true, deletedAt: true },
       });
 
       return user;
@@ -183,21 +229,14 @@ export const userRouter = createTRPCRouter({
   submitFeedback: protectedProcedure
     .input(z.object({ feedback: z.string().min(10) }))
     .mutation(async ({ input, ctx }) => {
-      await sendFeedbackEmail(input.feedback, ctx.session.user as User);
+      await sendFeedbackEmail(input.feedback, ctx.session.user);
     }),
 
   getFriend: protectedProcedure
     .input(z.object({ friendId: z.number() }))
     .query(async ({ input, ctx }) => {
       const friend = await db.user.findUnique({
-        where: {
-          id: input.friendId,
-          userBalances: {
-            some: {
-              friendId: ctx.session.user.id,
-            },
-          },
-        },
+        where: getVisibleFriendWhere(ctx.session.user.id, input.friendId),
       });
 
       if (!friend) {
@@ -249,14 +288,7 @@ export const userRouter = createTRPCRouter({
     )
     .mutation(async ({ input, ctx }) => {
       const friend = await db.user.findUnique({
-        where: {
-          id: input.friendId,
-          userBalances: {
-            some: {
-              friendId: ctx.session.user.id,
-            },
-          },
-        },
+        where: getVisibleFriendWhere(ctx.session.user.id, input.friendId),
       });
 
       if (!friend) {
@@ -421,8 +453,8 @@ export const userRouter = createTRPCRouter({
   getWebPushPublicKey: protectedProcedure.query(() => env.WEB_PUSH_PUBLIC_KEY ?? ''),
 });
 
-export const getUserMap = async (userIds: number[]) => {
-  const users = await db.user.findMany({
+export const getUserMap = async (userIds: number[], database: Pick<PrismaClient, 'user'> = db) => {
+  const users = await database.user.findMany({
     where: {
       id: { in: userIds },
     },

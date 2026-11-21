@@ -7,20 +7,20 @@ import {
 } from '~/lib/shortcutExpense';
 import { getCurrencyHelpers } from '~/utils/numbers';
 
-const makeUser = (id: number): User =>
-  ({
-    id,
-    name: `User ${id}`,
-    email: `user${id}@example.com`,
-    emailVerified: null,
-    image: null,
-    currency: 'EUR',
-    defaultCurrency: null,
-    preferredLanguage: '',
-    bankingId: null,
-    obapiProviderId: null,
-    hiddenFriendIds: [],
-  }) as User;
+const makeUser = (id: number): User => ({
+  id,
+  name: `User ${id}`,
+  email: `user${id}@example.com`,
+  emailVerified: null,
+  deletedAt: null,
+  image: null,
+  currency: 'EUR',
+  defaultCurrency: null,
+  preferredLanguage: '',
+  bankingId: null,
+  obapiProviderId: null,
+  hiddenFriendIds: [],
+});
 
 const EXPENSE_DATE = new Date('2026-09-06T10:30:00.000Z');
 
@@ -30,8 +30,8 @@ describe('buildShortcutParticipants', () => {
       const [payer, friend] = [makeUser(1), makeUser(2)];
 
       const { splitType, participants } = buildShortcutParticipants(
-        { splitType: SplitType.EQUAL, shares: null, participants: [payer!, friend!] },
-        payer!,
+        { splitType: SplitType.EQUAL, shares: null, participants: [payer, friend] },
+        payer,
         1000n,
         EXPENSE_DATE,
       );

@@ -26,15 +26,19 @@ const writeAll = async (categories: unknown) => {
 export const categoriesRouter = createTRPCRouter({
   list: protectedProcedure.query(readAll),
 
-  // Compte les depenses qui utilisent la categorie, pour que la suppression
-  // annonce ce qu'elle va delaisser plutot que de le decouvrir apres coup.
+  /*
+   * Compte les depenses qui utilisent la categorie, pour que la suppression
+   * annonce ce qu'elle va delaisser plutot que de le decouvrir apres coup.
+   */
   usage: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(({ input }) => db.expense.count({ where: { category: input.id, deletedAt: null } })),
 
-  // Les libelles deja utilises, avec leur categorie : l'index que le client
-  // interroge a chaque frappe pour deviner la categorie. Regroupe cote base,
-  // c'est quelques centaines de lignes, donc un seul appel mis en cache.
+  /*
+   * Les libelles deja utilises, avec leur categorie : l'index que le client
+   * interroge a chaque frappe pour deviner la categorie. Regroupe cote base,
+   * c'est quelques centaines de lignes, donc un seul appel mis en cache.
+   */
   history: protectedProcedure.query(async ({ ctx }) => {
     const rows = await db.expense.groupBy({
       by: ['name', 'category'],
@@ -42,7 +46,9 @@ export const categoriesRouter = createTRPCRouter({
         deletedAt: null,
         expenseParticipants: { some: { userId: ctx.session.user.id } },
       },
+      // oxlint-disable-next-line no-underscore-dangle -- Prisma's aggregate API names these fields.
       _count: { _all: true },
+      // oxlint-disable-next-line no-underscore-dangle -- Prisma's aggregate API names these fields.
       orderBy: { _count: { name: 'desc' } },
       take: 500,
     });
@@ -50,6 +56,7 @@ export const categoriesRouter = createTRPCRouter({
     return rows.map((row) => ({
       name: row.name,
       category: row.category,
+      // oxlint-disable-next-line no-underscore-dangle -- Prisma's aggregate API names these fields.
       count: row._count._all,
     }));
   }),
@@ -65,11 +72,9 @@ export const categoriesRouter = createTRPCRouter({
       return next;
     }),
 
-  delete: protectedProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ input }) => {
-      const next = (await readAll()).filter((c) => c.id !== input.id);
-      await writeAll(next);
-      return next;
-    }),
+  delete: protectedProcedure.input(z.object({ id: z.string() })).mutation(async ({ input }) => {
+    const next = (await readAll()).filter((c) => c.id !== input.id);
+    await writeAll(next);
+    return next;
+  }),
 });

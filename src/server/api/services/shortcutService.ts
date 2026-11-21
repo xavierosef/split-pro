@@ -83,7 +83,8 @@ export const authenticateShortcutToken = async (
     include: { user: true },
   });
 
-  if (!token || token.revokedAt) {
+  // Deleting an account keeps the user row (deletedAt set), so its tokens must stop here too.
+  if (!token || token.revokedAt || token.user.deletedAt) {
     throw new ShortcutError(401, 'INVALID_TOKEN', 'Unknown or revoked token');
   }
 
@@ -124,12 +125,13 @@ const resolveGroupTarget = async (groupId: number, userId: number): Promise<Reso
     groupId: group.id,
     splitType: defaultSplit?.splitType ?? SplitType.EQUAL,
     shares: defaultSplit?.shares ?? null,
-    participants: group.groupUsers.map(({ user }) => user),
+    // Deleted accounts stay group members for the history, but take no new share.
+    participants: group.groupUsers.map(({ user }) => user).filter(({ deletedAt }) => !deletedAt),
   };
 };
 
 const resolveFriendTarget = async (friendId: number, user: User): Promise<ResolvedTarget> => {
-  const friend = await db.user.findUnique({ where: { id: friendId } });
+  const friend = await db.user.findUnique({ where: { id: friendId, deletedAt: null } });
 
   if (!friend) {
     throw new ShortcutError(404, 'FRIEND_NOT_FOUND', 'Friend not found');
@@ -366,8 +368,10 @@ export const addExpenseFromShortcut = async (
       },
     });
   } catch (error) {
-    // Another run of the same shortcut won the race between the lookup above and
-    // this insert: drop the expense just created and hand back the original one.
+    /*
+     * Another run of the same shortcut won the race between the lookup above and
+     * this insert: drop the expense just created and hand back the original one.
+     */
     if (
       error instanceof Prisma.PrismaClientKnownRequestError &&
       'P2002' === error.code &&

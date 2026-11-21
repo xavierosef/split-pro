@@ -19,7 +19,11 @@ export const CategoryTile: React.FC<{
       style={{ '--category-color': tint } as React.CSSProperties}
     >
       {CustomIcon ? (
-        <CustomIcon size={iconSize} className={iconClassName} style={{ color: tint }} />
+        React.createElement(CustomIcon, {
+          size: iconSize,
+          className: iconClassName,
+          style: { color: tint },
+        })
       ) : (
         <CategoryIcon
           category={category ?? undefined}

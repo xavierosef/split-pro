@@ -2,9 +2,11 @@ import { AnimatePresence, motion } from 'motion/react';
 import { useRouter } from 'next/router';
 import { useEffect, useState } from 'react';
 
-// Les pages passent par getServerSideProps : une navigation implique un
-// aller-retour serveur pendant lequel l'ecran precedent reste affiche sans rien
-// dire. Cette barre est le seul retour immediat qu'on puisse donner.
+/*
+ * Les pages passent par getServerSideProps : une navigation implique un
+ * aller-retour serveur pendant lequel l'ecran precedent reste affiche sans rien
+ * dire. Cette barre est le seul retour immediat qu'on puisse donner.
+ */
 export const RouteProgress: React.FC = () => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);

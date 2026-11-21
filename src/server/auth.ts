@@ -1,5 +1,4 @@
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
-import { Prisma } from '@prisma/client';
 import { type GetServerSidePropsContext } from 'next';
 import { type DefaultSession, type NextAuthOptions, type User, getServerSession } from 'next-auth';
 import { type Adapter, type AdapterAccount, type AdapterUser } from 'next-auth/adapters';
@@ -10,6 +9,8 @@ import KeycloakProvider from 'next-auth/providers/keycloak';
 
 import { env } from '~/env';
 import { db } from '~/server/db';
+import { sanitiseAdapterAccount } from '~/server/authAccount';
+import { parseEnvBoolean } from '~/utils/env';
 
 import { mailServerConfig, sendSignUpEmail } from './mailer';
 import { getBaseUrl } from '~/utils/api';
@@ -36,6 +37,7 @@ declare module 'next-auth' {
     };
   }
 
+  // @ts-ignore
   interface User {
     id: number;
     name: string;
@@ -55,6 +57,21 @@ const SplitProPrismaAdapter = (...args: Parameters<typeof PrismaAdapter>): Adapt
 
   return {
     ...prismaAdapter,
+    deleteSession: async (sessionToken) => {
+      // Account deletion already revokes sessions before the browser signs out.
+      await db.session.deleteMany({ where: { sessionToken } });
+    },
+    getSessionAndUser: async (sessionToken) => {
+      const result = await prismaAdapter.getSessionAndUser?.(sessionToken);
+      if (!result) {
+        return null;
+      }
+      const user = await db.user.findUnique({
+        where: { id: Number(result.user.id) },
+        select: { deletedAt: true },
+      });
+      return user && !user.deletedAt ? result : null;
+    },
     createUser: (user: Omit<AdapterUser, 'id'>): Promise<AdapterUser> => {
       // oxlint-disable-next-line typescript/no-unsafe-assignment
       const prismaCreateUser = prismaAdapter.createUser;
@@ -81,17 +98,9 @@ const SplitProPrismaAdapter = (...args: Parameters<typeof PrismaAdapter>): Adapt
 
       // OIDC providers can provide non-standard fields that do not exist in the prisma schema.
       // We strip them out before passing them on to the original adapter.
-      const knownAccountFields = new Set<string>(Object.values(Prisma.AccountScalarFieldEnum));
-
-      const sanitised = Object.fromEntries(
-        Object.entries(account as Record<string, unknown>).filter(([k]) =>
-          knownAccountFields.has(k),
-        ),
-      ) as AdapterAccount;
-
-      return originalLinkAccount(sanitised);
+      return originalLinkAccount(sanitiseAdapterAccount(account));
     },
-  } as Adapter;
+  };
 };
 
 /**
@@ -118,6 +127,16 @@ export const authOptions: NextAuthOptions = {
       },
     }),
     async signIn({ user, email }) {
+      if ('number' === typeof user.id && Number.isInteger(user.id)) {
+        const existingUser = await db.user.findUnique({
+          where: { id: user.id },
+          select: { deletedAt: true },
+        });
+        if (existingUser?.deletedAt) {
+          return false;
+        }
+      }
+
       if (email?.verificationRequest && env.DISABLE_EMAIL_SIGNUP) {
         const existingUser = await db.user.findUnique({
           where: { email: user.email },
@@ -254,6 +273,7 @@ function getProviders() {
         // A record that has an id, a name, an email, and an image.
         //
         // To work around this, we case to unknown and then `User`.
+        // oxlint-disable-next-line typescript/no-unsafe-type-assertion
         return {
           id: profile.sub,
           name: profile.name,
@@ -281,8 +301,16 @@ function getProviders() {
  */
 export function validateAuthEnv() {
   console.log('Validating auth env');
-  if (!process.env.SKIP_ENV_VALIDATION) {
+  if (!parseEnvBoolean(process.env.SKIP_ENV_VALIDATION)) {
     const providers = getProviders();
+    const oauthProviders = providers.filter((provider) => 'oauth' === provider.type);
+
+    if (env.OAUTH_AUTO_REDIRECT && (1 !== oauthProviders.length || 1 !== providers.length)) {
+      console.warn(
+        'OAUTH_AUTO_REDIRECT is enabled, but automatic redirection will not happen until exactly one OAuth provider and no other authentication providers are configured.',
+      );
+    }
+
     if (0 === providers.length) {
       throw new Error(
         'No authentication providers are configured, at least one is required. Learn more here: https://github.com/oss-apps/split-pro?tab=readme-ov-file#setting-up-the-environment',

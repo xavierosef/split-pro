@@ -7,12 +7,14 @@ const MAX_PULL = 130;
 
 type Phase = 'idle' | 'pulling' | 'refreshing' | 'done';
 
-// En PWA plein ecran iOS il n'y a plus de rebond natif : le geste doit etre
-// reimplemente. On ne prend la main que si le conteneur est deja tout en haut,
-// sinon on laisse le scroll normal se faire.
-// Le contenu n'est volontairement PAS translate : un ancetre transforme
-// deviendrait le referentiel des enfants en position:fixed et delogerait le
-// bouton d'ajout.
+/*
+ * En PWA plein ecran iOS il n'y a plus de rebond natif : le geste doit etre
+ * reimplemente. On ne prend la main que si le conteneur est deja tout en haut,
+ * sinon on laisse le scroll normal se faire.
+ * Le contenu n'est volontairement PAS translate : un ancetre transforme
+ * deviendrait le referentiel des enfants en position:fixed et delogerait le
+ * bouton d'ajout.
+ */
 export const PullToRefresh: React.FC<{
   onRefresh: () => Promise<unknown>;
   children: React.ReactNode;
@@ -48,7 +50,7 @@ export const PullToRefresh: React.FC<{
     scroller.current = document.getElementById('mainlayout');
     const el = scroller.current;
     if (!el) {
-      return;
+      return () => {};
     }
 
     const onStart = (e: TouchEvent) => {
@@ -66,7 +68,7 @@ export const PullToRefresh: React.FC<{
         pull.set(0);
         return;
       }
-      // resistance : le geste devient de plus en plus dur
+      // Resistance : le geste devient de plus en plus dur
       pull.set(Math.min(MAX_PULL, delta * 0.55));
       setPhase('pulling');
     };

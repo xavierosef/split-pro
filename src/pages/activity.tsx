@@ -2,6 +2,8 @@ import { SplitType } from '@prisma/client';
 import { type User } from 'next-auth';
 import Head from 'next/head';
 import Link from 'next/link';
+import { InfiniteScroll } from '~/components/InfiniteScroll';
+import { flattenPages, nextPageParam } from '~/utils/pagination';
 import MainLayout from '~/components/Layout/MainLayout';
 import { EntityAvatar } from '~/components/ui/avatar';
 import { type NextPageWithUser } from '~/types';
@@ -11,6 +13,7 @@ import { type TFunction } from 'next-i18next';
 import { useTranslationWithUtils } from '~/hooks/useTranslationWithUtils';
 import { withI18nStaticProps } from '~/utils/i18n/server';
 import { RefreshCcwDot } from 'lucide-react';
+import { RecurringExpenseIndicator } from '~/components/Expense/RecurringExpenseIndicator';
 import { Button } from '~/components/ui/button';
 import React from 'react';
 
@@ -31,9 +34,9 @@ function getPaymentString(
   } else if (isSettlement) {
     return (
       <div className={`${user.id === paidBy ? 'text-emerald-500' : 'text-orange-500'} text-sm`}>
-        {t('actors.you')}{' '}
-        {user.id === paidBy ? t('ui.expense.you.paid') : t('ui.expense.you.received')}{' '}
-        {toUIString(amount)}
+        {t(user.id === paidBy ? 'activity.you_paid_amount' : 'activity.you_received_amount', {
+          amount: toUIString(amount),
+        })}
       </div>
     );
   } else {
@@ -41,9 +44,14 @@ function getPaymentString(
       <div
         className={`${(user.id === paidBy) !== amount < 0n ? 'text-emerald-500' : 'text-orange-500'} text-sm`}
       >
-        {t(`actors.you`)}{' '}
-        {t(`ui.expense.you.${(user.id === paidBy) !== amount < 0n ? 'lent' : 'owe'}`)}{' '}
-        {toUIString(expenseUserAmt)}
+        {t(
+          (user.id === paidBy) !== amount < 0n
+            ? 'ui.expense.statements.you_lent_amount'
+            : 'ui.expense.statements.you_owe_amount',
+          {
+            amount: toUIString(expenseUserAmt),
+          },
+        )}
       </div>
     );
   }
@@ -51,7 +59,11 @@ function getPaymentString(
 
 const ActivityPage: NextPageWithUser = ({ user }) => {
   const { displayName, t, toUIDate, i18n } = useTranslationWithUtils();
-  const expensesQuery = api.expense.getAllExpenses.useQuery();
+  const expensesQuery = api.expense.getAllExpenses.useInfiniteQuery(
+    {},
+    { getNextPageParam: nextPageParam },
+  );
+  const expenseItems = flattenPages(expensesQuery.data);
 
   const actions = React.useMemo(
     () => (
@@ -76,41 +88,49 @@ const ActivityPage: NextPageWithUser = ({ user }) => {
         loading={expensesQuery.isPending}
       >
         <div className="flex flex-col gap-4">
-          {!expensesQuery.data?.length ? (
+          {!expensesQuery.isError && !expenseItems.length ? (
             <div className="mt-[30vh] text-center text-gray-400">{t('ui.no_activity')}</div>
           ) : null}
-          {expensesQuery.data?.map((e) => {
+          {expenseItems.map((e) => {
             const { toUIString } = getCurrencyHelpers({
               locale: i18n.language,
               currency: e.expense.currency,
             });
 
             return (
-              <Link href={`/expenses/${e.expenseId}`} key={e.expenseId} className="flex gap-2">
+              <Link
+                href={`/expenses/${e.expenseId}`}
+                key={e.expenseId}
+                className="group/expense flex gap-2"
+              >
                 <div className="mt-1">
                   <EntityAvatar entity={e.expense.paidByUser} size={30} />
                 </div>
                 <div>
                   {e.expense.deletedByUser ? (
                     <p className="text-red-500 opacity-70">
-                      <span className="font-semibold">
-                        {displayName(e.expense.deletedByUser, user.id)}
-                      </span>{' '}
-                      {t(
-                        `ui.expense.${e.expense.deletedByUser.id === user.id ? 'you' : 'user'}.deleted`,
-                      )}{' '}
-                      <span className="font-semibold">{e.expense.name}</span>
+                      {t('activity.user_deleted_expense', {
+                        actor: e.expense.deletedByUser.id === user.id ? 'you' : 'other',
+                        user: displayName(e.expense.deletedByUser),
+                        expense: e.expense.name,
+                      })}
                     </p>
                   ) : (
                     <p className="text-foreground">
-                      <span className="font-semibold text-foreground">
-                        {displayName(e.expense.paidByUser, user.id)}
-                      </span>{' '}
                       {t(
-                        `ui.expense.${e.expense.paidByUser.id === user.id ? 'you' : 'user'}.${e.expense.amount > 0n ? 'paid' : 'received'}`,
-                      )}{' '}
-                      {toUIString(e.expense.amount)} {t('ui.expense.for')}{' '}
-                      <span className="font-semibold text-foreground">{e.expense.name}</span>
+                        e.expense.paidByUser.id === user.id
+                          ? e.expense.amount > 0n
+                            ? 'activity.you_paid_for_expense'
+                            : 'activity.you_received_for_expense'
+                          : e.expense.amount > 0n
+                            ? 'activity.user_paid_for_expense'
+                            : 'activity.user_received_for_expense',
+                        {
+                          user: displayName(e.expense.paidByUser),
+                          amount: toUIString(e.expense.amount),
+                          expense: e.expense.name,
+                        },
+                      )}
                     </p>
                   )}
 
@@ -124,11 +144,24 @@ const ActivityPage: NextPageWithUser = ({ user }) => {
                     toUIString,
                     !!e.expense.deletedBy,
                   )}
-                  <p className="text-xs text-gray-500">{toUIDate(e.expense.expenseDate)}</p>
+                  <p className="flex items-center gap-1 text-xs text-gray-500">
+                    {toUIDate(e.expense.expenseDate)}
+                    {null !== e.expense.recurrenceId && <RecurringExpenseIndicator />}
+                  </p>
                 </div>
               </Link>
             );
           })}
+          <InfiniteScroll
+            hasNextPage={expensesQuery.hasNextPage}
+            isFetching={expensesQuery.isFetching}
+            isError={expensesQuery.isError}
+            onLoadMore={
+              expensesQuery.isError && !expensesQuery.isFetchNextPageError
+                ? expensesQuery.refetch
+                : expensesQuery.fetchNextPage
+            }
+          />
         </div>
       </MainLayout>
     </>

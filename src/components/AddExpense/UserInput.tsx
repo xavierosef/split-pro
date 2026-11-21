@@ -1,7 +1,7 @@
-import { useTranslation } from 'next-i18next';
 import Router from 'next/router';
 import { z } from 'zod';
 
+import { useTranslationWithUtils } from '~/hooks/useTranslationWithUtils';
 import { useAddExpenseStore } from '~/store/addStore';
 import { api } from '~/utils/api';
 
@@ -10,7 +10,7 @@ import { EntityAvatar } from '../ui/avatar';
 export const UserInput: React.FC<{
   isEditing?: boolean;
 }> = ({ isEditing }) => {
-  const { t } = useTranslation();
+  const { t, displayName } = useTranslationWithUtils();
   const {
     setNameOrEmail,
     removeLastParticipant,
@@ -59,14 +59,8 @@ export const UserInput: React.FC<{
         id: -1,
         name: nameOrEmail,
         email: nameOrEmail,
-        emailVerified: new Date(),
+        deletedAt: null,
         image: null,
-        currency: 'USD',
-        defaultCurrency: null,
-        obapiProviderId: null,
-        bankingId: null,
-        preferredLanguage: '',
-        hiddenFriendIds: [],
       });
     }
   };
@@ -74,7 +68,7 @@ export const UserInput: React.FC<{
   return (
     <div className="mt-4 flex gap-2 overflow-x-auto border-b pb-4 sm:flex-wrap">
       {group ? (
-        <div className="flex items-center gap-2 rounded-full bg-muted p-0.5 pr-4">
+        <div className="bg-muted flex items-center gap-2 rounded-full p-0.5 pr-4">
           <EntityAvatar entity={group} size={30} />
           <p className="text-xs">{group.name}</p>
         </div>
@@ -83,10 +77,10 @@ export const UserInput: React.FC<{
           p.id !== currentUser?.id ? (
             <div
               key={p.id}
-              className="flex max-w-40 items-center gap-2 rounded-full bg-muted p-0.5 pr-4"
+              className="bg-muted flex max-w-40 items-center gap-2 rounded-full p-0.5 pr-4"
             >
               <EntityAvatar entity={p} size={30} />
-              <p className="truncate text-xs">{p.name ?? p.email}</p>
+              <p className="truncate text-xs">{displayName(p)}</p>
             </div>
           ) : null,
         )

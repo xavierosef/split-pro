@@ -9,12 +9,17 @@
 
 import { TRPCError, initTRPC } from '@trpc/server';
 import { type CreateNextContextOptions } from '@trpc/server/adapters/next';
+import { type PrismaClient } from '@prisma/client';
 import { type Session } from 'next-auth';
 import superjson from 'superjson';
 import { ZodError, z } from 'zod';
 
+import { getAppErrorCode } from '~/server/api/appError';
+import { env } from '~/env';
+import { withCurrentBalances } from '~/server/api/services/balanceQuery';
 import { getServerAuthSession } from '~/server/auth';
 import { db } from '~/server/db';
+import { TIME_ZONE_HEADER, parseTimeZone } from '~/utils/timeZone';
 
 /**
  * 1. CONTEXT
@@ -24,8 +29,10 @@ import { db } from '~/server/db';
  * These allow you to access things when processing a request, like the database, the session, etc.
  */
 
-interface CreateContextOptions {
+export interface CreateContextOptions {
   session: Session | null;
+  db?: PrismaClient;
+  timeZone?: string | string[];
 }
 
 /**
@@ -38,9 +45,10 @@ interface CreateContextOptions {
  *
  * @see https://create.t3.gg/en/usage/trpc#-serverapitrpcts
  */
-const createInnerTRPCContext = (opts: CreateContextOptions) => ({
+export const createInnerTRPCContext = (opts: CreateContextOptions) => ({
   session: opts.session,
-  db,
+  db: opts.db ?? db,
+  timeZone: parseTimeZone(opts.timeZone),
 });
 
 /**
@@ -57,8 +65,11 @@ export const createTRPCContext = async (opts: CreateNextContextOptions) => {
 
   return createInnerTRPCContext({
     session,
+    timeZone: req.headers[TIME_ZONE_HEADER],
   });
 };
+
+export type InnerTRPCContext = ReturnType<typeof createInnerTRPCContext>;
 
 /**
  * 2. INITIALIZATION
@@ -68,7 +79,7 @@ export const createTRPCContext = async (opts: CreateNextContextOptions) => {
  * errors on the backend.
  */
 
-const t = initTRPC.context<typeof createTRPCContext>().create({
+const t = initTRPC.context<InnerTRPCContext>().create({
   transformer: superjson,
   errorFormatter({ shape, error }) {
     return {
@@ -76,6 +87,7 @@ const t = initTRPC.context<typeof createTRPCContext>().create({
       data: {
         ...shape.data,
         zodError: error.cause instanceof ZodError ? error.cause.flatten() : null,
+        appErrorCode: getAppErrorCode(error.cause),
       },
     };
   },
@@ -112,18 +124,36 @@ export const publicProcedure = t.procedure;
  *
  * @see https://trpc.io/docs/procedures
  */
-export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
+export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
   if (!ctx.session || !ctx.session.user) {
+    throw new TRPCError({ code: 'UNAUTHORIZED' });
+  }
+
+  const user = await ctx.db.user.findUnique({
+    where: { id: ctx.session.user.id },
+    select: { deletedAt: true },
+  });
+  if (!user || user.deletedAt) {
     throw new TRPCError({ code: 'UNAUTHORIZED' });
   }
 
   return next({
     ctx: {
-      // infers the `session` as non-nullable
+      // Infers the `session` as non-nullable
       session: { ...ctx.session, user: ctx.session.user },
     },
   });
 });
+
+const currentBalances = t.middleware(({ ctx, next }) => {
+  if (!env.EXCLUDE_FUTURE_EXPENSES) {
+    return next();
+  }
+
+  return withCurrentBalances(ctx.db, ctx.timeZone, (tx) => next({ ctx: { db: tx } }));
+});
+
+export const balanceProcedure = protectedProcedure.use(currentBalances);
 
 export const groupProcedure = protectedProcedure
   .input(z.object({ groupId: z.number() }))
@@ -141,3 +171,5 @@ export const groupProcedure = protectedProcedure
 
     return next({ ctx: { ...ctx } });
   });
+
+export const groupBalanceProcedure = groupProcedure.use(currentBalances);

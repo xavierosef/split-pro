@@ -7,6 +7,7 @@ import { useRouter } from 'next/router';
 import { useCallback, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 import { AccountButton } from '~/components/Account/AccountButton';
+import { DeleteAccount } from '~/components/Account/DeleteAccount';
 import { LanguagePicker } from '~/components/Account/LanguagePicker';
 import { SubmitFeedback } from '~/components/Account/SubmitFeedback';
 import { AutoFocusPicker } from '~/components/Account/AutoFocusPicker';
@@ -81,7 +82,10 @@ const AccountPage: NextPageWithUser<{
     [updateDetailsMutation, utils.user.me, t],
   );
 
-  const header = useMemo(() => <div className="text-3xl font-semibold">Account</div>, []);
+  const header = useMemo(
+    () => <div className="text-3xl font-semibold">{t('account.title')}</div>,
+    [t],
+  );
 
   const onSignOut = useCallback(async () => {
     await signOut({ redirect: false });
@@ -179,6 +183,9 @@ const AccountPage: NextPageWithUser<{
             </AccountButton>
           </SimpleConfirmationDialog>
         </div>
+        <div className="mt-6 flex justify-center">
+          <DeleteAccount />
+        </div>
       </MainLayout>
     </>
   );
@@ -189,7 +196,7 @@ AccountPage.auth = true;
 export const getServerSideProps: GetServerSideProps = async (context) => ({
   props: {
     feedbackPossible: Boolean(env.FEEDBACK_EMAIL),
-    bankConnectionEnabled: Boolean(isBankConnectionConfigured()),
+    bankConnectionEnabled: isBankConnectionConfigured(),
     bankConnection: whichBankConnectionConfigured(),
     ...(await customServerSideTranslations(context.locale, ['common', 'currencies'])),
     maxUploadFileSizeMB: env.UPLOAD_MAX_FILE_SIZE_MB,
